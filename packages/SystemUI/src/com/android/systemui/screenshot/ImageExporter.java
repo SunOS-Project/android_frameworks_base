@@ -60,6 +60,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.screenshot.CustomScreenshotController;
+
 /** A class to help with exporting screenshot to storage. */
 public class ImageExporter {
     private static final String TAG = LogConfig.logTag(ImageExporter.class);
@@ -71,6 +73,9 @@ public class ImageExporter {
     // ex: 'Screenshot_20201215-090626-display-1.png'
     private static final String CONNECTED_DISPLAY_FILENAME_PATTERN =
             "Screenshot_%1$tY%<tm%<td-%<tH%<tM%<tS-display-%2$d.%3$s";
+    // ex: 'Screenshot_20201215-090626_Settings.png'
+    private static final String FILENAME_WITH_APP_NAME_PATTERN =
+            "Screenshot_%1$tY%<tm%<td-%<tH%<tM%<tS_%2$s.%3$s";
     private static final String SCREENSHOTS_PATH = Environment.DIRECTORY_PICTURES
             + File.separator + Environment.DIRECTORY_SCREENSHOTS;
 
@@ -92,14 +97,17 @@ public class ImageExporter {
             "Bitmap.compress returned false. (Failure unknown)";
 
     private final ContentResolver mResolver;
+    private final CustomScreenshotController mCustomScreenshotController;
     private CompressFormat mCompressFormat = CompressFormat.PNG;
     private int mQuality = 100;
     private final FeatureFlags mFlags;
 
     @Inject
-    public ImageExporter(ContentResolver resolver, FeatureFlags flags) {
+    public ImageExporter(ContentResolver resolver, FeatureFlags flags,
+            CustomScreenshotController customScreenshotController) {
         mResolver = resolver;
         mFlags = flags;
+        mCustomScreenshotController = customScreenshotController;
     }
 
     /**
@@ -479,8 +487,12 @@ public class ImageExporter {
         }
     }
 
-    @VisibleForTesting
-    static String createFilename(ZonedDateTime time, CompressFormat format, int displayId) {
+    String createFilename(ZonedDateTime time, CompressFormat format, int displayId) {
+        final String foregroundAppName = mCustomScreenshotController.getForegroundAppLabel();
+        if (foregroundAppName != null) {
+            return String.format(FILENAME_WITH_APP_NAME_PATTERN, time, foregroundAppName,
+                    fileExtension(format));
+        }
         if (displayId == Display.DEFAULT_DISPLAY) {
             return String.format(FILENAME_PATTERN, time, fileExtension(format));
         }

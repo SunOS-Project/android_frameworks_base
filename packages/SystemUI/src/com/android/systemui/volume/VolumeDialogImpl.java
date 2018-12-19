@@ -573,6 +573,13 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
         lp.windowAnimations = -1;
 
         mOriginalGravity = mContext.getResources().getInteger(R.integer.volume_dialog_gravity);
+        if (!mIsTv) {
+            // Clear the pre-defined gravity for left or right,
+            // this is handled by VolumeDialogControllerImplExt.isVolumePanelOnLeft()
+            mOriginalGravity &= ~(Gravity.LEFT | Gravity.RIGHT);
+            mOriginalGravity |= VolumeDialogControllerImplExt.getInstance().isVolumePanelOnLeft()
+                    ? Gravity.LEFT : Gravity.RIGHT;
+        }
         mWindowGravity = Gravity.getAbsoluteGravity(mOriginalGravity,
                 mContext.getResources().getConfiguration().getLayoutDirection());
         lp.gravity = mWindowGravity;

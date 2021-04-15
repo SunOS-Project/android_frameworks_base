@@ -65,6 +65,7 @@ public class SystemBackupAgent extends BackupAgentHelper {
     private static final String APP_LOCALES_HELPER = "app_locales";
     private static final String APP_GENDER_HELPER = "app_gender";
     private static final String COMPANION_HELPER = "companion";
+    private static final String NETWORK_POLICY_HELPER = "network_policy";
     private static final String SYSTEM_GENDER_HELPER = "system_gender";
 
     // These paths must match what the WallpaperManagerService uses.  The leaf *_FILENAME
@@ -103,6 +104,7 @@ public class SystemBackupAgent extends BackupAgentHelper {
                     APP_LOCALES_HELPER,
                     COMPANION_HELPER,
                     APP_GENDER_HELPER,
+                    NETWORK_POLICY_HELPER,
                     SYSTEM_GENDER_HELPER);
 
     /** Helpers that are enabled for full, non-system users. */
@@ -143,6 +145,7 @@ public class SystemBackupAgent extends BackupAgentHelper {
         addHelperIfEligibleForUser(APP_GENDER_HELPER,
                 new AppGrammaticalGenderBackupHelper(mUserId));
         addHelperIfEligibleForUser(COMPANION_HELPER, new CompanionBackupHelper(mUserId));
+        addHelperIfEligibleForUser(NETWORK_POLICY_HELPER, new NetworkPolicyBackupHelper(mUserId));
         addHelperIfEligibleForUser(SYSTEM_GENDER_HELPER,
                 new SystemGrammaticalGenderBackupHelper(mUserId));
     }

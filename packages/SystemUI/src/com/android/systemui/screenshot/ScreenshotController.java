@@ -197,7 +197,7 @@ public class ScreenshotController implements ScreenshotHandler {
     static final String ACTION_TYPE_DELETE = "Delete";
     static final String ACTION_TYPE_LENS = "Lens";
 
-    static final int SCREENSHOT_CORNER_DEFAULT_TIMEOUT_MILLIS = 6000;
+    static final int SCREENSHOT_CORNER_DEFAULT_TIMEOUT_MILLIS = 3000;
 
     private final WindowContext mContext;
     private final FeatureFlags mFlags;

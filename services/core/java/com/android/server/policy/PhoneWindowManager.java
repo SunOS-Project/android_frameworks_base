@@ -821,7 +821,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     handleRingerChordGesture();
                     break;
                 case MSG_SCREENSHOT_CHORD:
-                    handleScreenShot(msg.arg1);
+                    handleScreenShot(msg.arg1, msg.arg2);
                     break;
                 case MSG_SWITCH_KEYBOARD_LAYOUT:
                     SwitchKeyboardLayoutMessageObject object =
@@ -1741,10 +1741,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     private void interceptScreenshotChord(int source, long pressDelay) {
+        interceptScreenshotChord(TAKE_SCREENSHOT_FULLSCREEN, source, pressDelay);
+    }
+
+    private void interceptScreenshotChord(int type, int source, long pressDelay) {
         mHandler.removeMessages(MSG_SCREENSHOT_CHORD);
-        // arg2 is unused, but necessary to insure we call the correct method signature
-        // since the screenshot source is read from message.arg1
-        mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCREENSHOT_CHORD, source, 0),
+        mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_SCREENSHOT_CHORD, source, type),
                 pressDelay);
     }
 
@@ -1822,8 +1824,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
     };
 
-    private void handleScreenShot(@WindowManager.ScreenshotSource int source) {
-        mDefaultDisplayPolicy.takeScreenshot(TAKE_SCREENSHOT_FULLSCREEN, source);
+    private void handleScreenShot(@WindowManager.ScreenshotSource int source,
+            @WindowManager.ScreenshotType int type) {
+        if (type == TAKE_SCREENSHOT_SELECTED_REGION) {
+            performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, true,
+                    "Partial Screenshot");
+        }
+        mDefaultDisplayPolicy.takeScreenshot(type, source);
     }
 
     @Override
@@ -3543,7 +3550,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 break;
             case KeyEvent.KEYCODE_S:
                 if (firstDown && event.isMetaPressed() && event.isCtrlPressed()) {
-                    interceptScreenshotChord(SCREENSHOT_KEY_OTHER, 0 /*pressDelay*/);
+                    int type = event.isShiftPressed() ? TAKE_SCREENSHOT_SELECTED_REGION
+                            : TAKE_SCREENSHOT_FULLSCREEN;
+                    interceptScreenshotChord(type, SCREENSHOT_KEY_OTHER, 0 /*pressDelay*/);
                     logKeyboardSystemsEvent(event, KeyboardLogEvent.TAKE_SCREENSHOT);
                     return true;
                 }

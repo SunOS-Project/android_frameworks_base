@@ -295,7 +295,33 @@ public class Camera {
                 SystemProperties.get("vendor.camera.aux.packagelist", packageName).split(","));
         List<String> packageExcludelist = Arrays.asList(
                 SystemProperties.get("vendor.camera.aux.packageexcludelist", "").split(","));
-        return packageList.contains(packageName) && !packageExcludelist.contains(packageName);
+
+        if (packageExcludelist.contains(packageName)) {
+            return false;
+        }
+        if (packageList.contains(packageName)) {
+            return true;
+        }
+
+        Context context = ActivityThread.currentApplication().getApplicationContext();
+        String pkgList = context.getResources().getString(R.string.oplus_camera_aux_packages);
+        if (pkgList.length() > 0) {
+            for (String pkg : pkgList.split(",")) {
+                if (packageName.equals(pkg)) {
+                    return true;
+                }
+            }
+        }
+        pkgList = context.getResources().getString(R.string.oplus_camera_aux_packages_startwith);
+        if (pkgList.length() > 0) {
+            for (String pkg : pkgList.split(",")) {
+                if (packageName.startsWith(pkg)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /** @hide */

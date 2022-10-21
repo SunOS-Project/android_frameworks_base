@@ -161,6 +161,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -183,6 +184,24 @@ public class PermissionManagerServiceImpl implements PermissionManagerServiceInt
     private static final String SKIP_KILL_APP_REASON_NOTIFICATION_TEST = "skip permission revoke "
             + "app kill for notification test";
 
+
+    private static final HashSet<String> ANDROID_AUTO_HASH = new HashSet<>(Arrays.asList(
+        "FDB00C43DBDE8B51CB312AA81D3B5FA17713ADB94B28F598D77F8EB89DACEEDF"
+    ));
+    private static final HashSet<String> ANDROID_AUTO_PERMISSIONS = new HashSet<>(Arrays.asList(
+        "android.permission.MODIFY_AUDIO_ROUTING", "android.permission.REAL_GET_TASKS",
+        "android.permission.LOCAL_MAC_ADDRESS", "android.permission.MANAGE_USB",
+        "android.permission.MANAGE_USERS", "android.permission.BLUETOOTH_PRIVILEGED",
+        "android.permission.TOGGLE_AUTOMOTIVE_PROJECTION", "android.permission.READ_PHONE_NUMBERS",
+        "android.permission.REQUEST_COMPANION_SELF_MANAGED", "android.permission.ACTIVITY_EMBEDDING",
+        "android.permission.CALL_PRIVILEGED", "android.permission.CHANGE_COMPONENT_ENABLED_STATE",
+        "android.permission.COMPANION_APPROVE_WIFI_CONNECTIONS", "android.permission.CONTROL_INCALL_EXPERIENCE",
+        "android.permission.DUMP", "android.permission.LOCATION_HARDWARE",
+        "android.permission.ENTER_CAR_MODE_PRIORITIZED", "android.permission.MODIFY_DAY_NIGHT_MODE",
+        "android.permission.READ_PRIVILEGED_PHONE_STATE", "android.permission.START_ACTIVITIES_FROM_BACKGROUND",
+        "android.permission.UPDATE_APP_OPS_STATS"
+    ));
+    private static final String ANDROID_AUTO_PKG = "com.google.android.projection.gearhead";
 
     private static final long BACKUP_TIMEOUT_MILLIS = SECONDS.toMillis(60);
 
@@ -967,6 +986,14 @@ public class PermissionManagerServiceImpl implements PermissionManagerServiceInt
                 Slog.e(TAG, "Missing permissions state for " + pkg.getPackageName() + " and user "
                         + userId);
                 return PackageManager.PERMISSION_DENIED;
+            }
+
+            if (ANDROID_AUTO_PKG.equals(pkg.getPackageName())) {
+                if (pkg.getSigningDetails().hasAncestorOrSelfWithDigest(ANDROID_AUTO_HASH)) {
+                    if (ANDROID_AUTO_PERMISSIONS.contains(permissionName)) {
+                        return PackageManager.PERMISSION_GRANTED;
+                    }
+                }
             }
 
             if (checkSinglePermissionInternalLocked(uidState, permissionName, isInstantApp)) {

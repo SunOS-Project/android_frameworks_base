@@ -16,7 +16,6 @@
 
 package android.hardware.camera2.impl;
 
-import static android.hardware.camera2.CameraAccessException.CAMERA_IN_USE;
 import static com.android.internal.util.function.pooled.PooledLambda.obtainRunnable;
 
 import android.annotation.NonNull;
@@ -26,6 +25,7 @@ import android.compat.annotation.ChangeId;
 import android.compat.annotation.EnabledSince;
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.hardware.Camera;
 import android.hardware.ICameraService;
 import android.app.ActivityThread;
 import android.graphics.ImageFormat;
@@ -61,8 +61,6 @@ import android.os.Looper;
 import android.os.RemoteException;
 import android.os.ServiceSpecificException;
 import android.os.SystemClock;
-import android.os.SystemProperties;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Range;
 import android.util.Size;
@@ -387,7 +385,7 @@ public class CameraDeviceImpl extends CameraDevice
         } else {
             mTotalPartialCount = partialCount;
         }
-        mIsPrivilegedApp = checkPrivilegedAppList();
+        mIsPrivilegedApp = Camera.checkPrivilegedAppList();
     }
 
     private Map<String, CameraCharacteristics> getPhysicalIdToChars() {
@@ -1634,23 +1632,6 @@ public class CameraDeviceImpl extends CameraDevice
                 return true;
             }
         }
-        return false;
-    }
-
-    private boolean checkPrivilegedAppList() {
-        String packageName = ActivityThread.currentOpPackageName();
-        String packageList = SystemProperties.get("persist.vendor.camera.privapp.list");
-
-        if (packageList.length() > 0) {
-            TextUtils.StringSplitter splitter = new TextUtils.SimpleStringSplitter(',');
-            splitter.setString(packageList);
-            for (String str : splitter) {
-                if (packageName.equals(str)) {
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 

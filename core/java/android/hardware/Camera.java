@@ -298,6 +298,17 @@ public class Camera {
         return packageList.contains(packageName) && !packageExcludelist.contains(packageName);
     }
 
+    /** @hide */
+    public static boolean checkPrivilegedAppList() {
+        String packageName = ActivityThread.currentOpPackageName();
+        if (packageName == null) {
+            return false;
+        }
+        List<String> packageList = Arrays.asList(
+                SystemProperties.get("persist.vendor.camera.privapp.list", packageName).split(","));
+        return packageList.contains(packageName);
+    }
+
     /**
      * Returns the number of physical cameras available on this device.
      * The return value of this method might change dynamically if the device

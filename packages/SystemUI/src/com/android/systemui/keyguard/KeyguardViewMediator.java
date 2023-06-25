@@ -119,6 +119,7 @@ import com.android.internal.policy.IKeyguardStateCallback;
 import com.android.internal.policy.ScreenDecorationsUtils;
 import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.util.LatencyTracker;
+import com.android.internal.util.sun.CustomUtils;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.keyguard.KeyguardConstants;
 import com.android.keyguard.KeyguardDisplayManager;
@@ -348,6 +349,8 @@ public class KeyguardViewMediator implements CoreStartable, Dumpable,
     private boolean mAnimatingScreenOff;
     private final Context mContext;
     private final FalsingCollector mFalsingCollector;
+
+    private final boolean mHasUdfps;
 
     /** High level access to the power manager for WakeLocks */
     private final PowerManager mPM;
@@ -1509,6 +1512,8 @@ public class KeyguardViewMediator implements CoreStartable, Dumpable,
         mSelectedUserInteractor = selectedUserInteractor;
         mKeyguardInteractor = keyguardInteractor;
 
+        mHasUdfps = CustomUtils.isUdfpsAvailable(context);
+
         mStatusBarStateController = statusBarStateController;
         statusBarStateController.addCallback(this);
 
@@ -1733,7 +1738,9 @@ public class KeyguardViewMediator implements CoreStartable, Dumpable,
         // explicitly DO NOT want to call
         // mKeyguardViewControllerLazy.get().setKeyguardGoingAwayState(false)
         // here, since that will mess with the device lock state.
-        mUpdateMonitor.dispatchKeyguardGoingAway(false);
+        if (!mHasUdfps) {
+            mUpdateMonitor.dispatchKeyguardGoingAway(false);
+        }
 
         notifyStartedGoingToSleep();
     }

@@ -42,4 +42,10 @@
 
    <!-- API URL to fetch PIF from -->
    <string name="config_pifUpdateUrl" translatable="false">https://raw.githubusercontent.com/SunOS-Project/android_vendor_gms_spoof/refs/heads/master/gms_certified_props.json</string>
+
+    <!-- Define device configs on boot -->
+    <string-array name="global_device_configs_override" translatable="false">
+    </string-array>
+    <string-array name="device_configs_override" translatable="false">
+    </string-array>
 </resources>

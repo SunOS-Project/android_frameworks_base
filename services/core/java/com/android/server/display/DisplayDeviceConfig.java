@@ -631,6 +631,7 @@ public class DisplayDeviceConfig {
     static final float BRIGHTNESS_DEFAULT = 0.5f;
     private static final String ETC_DIR = "etc";
     private static final String DISPLAY_CONFIG_DIR = "displayconfig";
+    private static final String CONFIG_FILE_FIRST_ONLY = "display_first_only.xml";
     private static final String CONFIG_FILE_FORMAT = "display_%s.xml";
     private static final String DEFAULT_CONFIG_FILE = "default.xml";
     private static final String DEFAULT_CONFIG_FILE_WITH_UIMODE_FORMAT = "default_%s.xml";
@@ -923,13 +924,13 @@ public class DisplayDeviceConfig {
         DisplayDeviceConfig config;
 
         config = loadConfigFromDirectory(context, Environment.getProductDirectory(),
-                physicalDisplayId, flags);
+                physicalDisplayId, flags, isFirstDisplay);
         if (config != null) {
             return config;
         }
 
         config = loadConfigFromDirectory(context, Environment.getVendorDirectory(),
-                physicalDisplayId, flags);
+                physicalDisplayId, flags, isFirstDisplay);
         if (config != null) {
             return config;
         }
@@ -990,7 +991,8 @@ public class DisplayDeviceConfig {
     }
 
     private static DisplayDeviceConfig loadConfigFromDirectory(Context context,
-            File baseDirectory, long physicalDisplayId, DisplayManagerFlags flags) {
+            File baseDirectory, long physicalDisplayId, DisplayManagerFlags flags,
+            boolean isFirstDisplay) {
         DisplayDeviceConfig config;
         // Create config using filename from physical ID (including "stable" bit).
         config = getConfigFromSuffix(context, baseDirectory, STABLE_ID_SUFFIX_FORMAT,
@@ -1005,6 +1007,13 @@ public class DisplayDeviceConfig {
                 flags);
         if (config != null) {
             return config;
+        }
+
+        if (isFirstDisplay) {
+            config = getFirstDisplayOnlyConfig(context, baseDirectory, flags);
+            if (config != null) {
+                return config;
+            }
         }
 
         // Create config using filename from port ID.
@@ -1693,6 +1702,17 @@ public class DisplayDeviceConfig {
         final String filename = String.format(Locale.ROOT, CONFIG_FILE_FORMAT, suffix);
         final File filePath = Environment.buildPath(
                 baseDirectory, ETC_DIR, DISPLAY_CONFIG_DIR, filename);
+        final DisplayDeviceConfig config = new DisplayDeviceConfig(context, flags);
+        if (config.initFromFile(filePath)) {
+            return config;
+        }
+        return null;
+    }
+
+    private static DisplayDeviceConfig getFirstDisplayOnlyConfig(Context context,
+            File baseDirectory, DisplayManagerFlags flags) {
+        final File filePath = Environment.buildPath(
+                baseDirectory, ETC_DIR, DISPLAY_CONFIG_DIR, CONFIG_FILE_FIRST_ONLY);
         final DisplayDeviceConfig config = new DisplayDeviceConfig(context, flags);
         if (config.initFromFile(filePath)) {
             return config;

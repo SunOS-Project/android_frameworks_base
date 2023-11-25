@@ -213,7 +213,6 @@ public class WalletActivity extends ComponentActivity implements
                 true,
                 Utils.getColorAttrDefaultColor(
                         this, com.android.internal.R.attr.colorAccentPrimary));
-        mDeviceEntryFaceAuthInteractor.onWalletLaunched();
     }
 
     @Override

@@ -921,18 +921,6 @@ public class InternetDialogDelegate implements
     }
 
     private boolean shouldShowMobileDialog(int subId) {
-        if (mDialog == null) {
-            return false;
-        }
-        if (mInternetDialogController.isMobileDataEnabled(subId)) {
-            if (isCiwlanWarningConditionSatisfied(subId)) {
-                return true;
-            }
-            boolean flag = Prefs.getBoolean(mDialog.getContext(), QS_HAS_TURNED_OFF_MOBILE_DATA, false);
-            if (!flag) {
-                return true;
-            }
-        }
         return false;
     }
 

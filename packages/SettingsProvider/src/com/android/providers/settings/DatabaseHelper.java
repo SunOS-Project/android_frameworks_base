@@ -16,12 +16,16 @@
 
 package com.android.providers.settings;
 
+import android.Manifest;
+import android.app.AppGlobals;
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.UserInfo;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.database.Cursor;
@@ -33,8 +37,11 @@ import android.media.AudioSystem;
 import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Process;
+import android.os.RemoteException;
 import android.os.SystemProperties;
 import android.os.UserHandle;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.provider.Settings.Secure;
@@ -56,9 +63,12 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 /**
  * Legacy settings database helper class for {@link SettingsProvider}.
@@ -2591,6 +2601,8 @@ class DatabaseHelper extends SQLiteOpenHelper {
             loadIntegerSetting(stmt, Settings.Global.TETHER_DUN_REQUIRED,
                     R.integer.def_tether_dun_required);
 
+            loadRestrictedNetworkingModeSetting(stmt);
+
             /*
              * IMPORTANT: Do not add any more upgrade steps here as the global,
              * secure, and system settings are no longer stored in a database
@@ -2600,6 +2612,29 @@ class DatabaseHelper extends SQLiteOpenHelper {
              */
         } finally {
             if (stmt != null) stmt.close();
+        }
+    }
+
+    private void loadRestrictedNetworkingModeSetting(SQLiteStatement stmt) {
+        loadSetting(stmt, Settings.Global.RESTRICTED_NETWORKING_MODE, "1");
+        try {
+            List<PackageInfo> packages = new ArrayList<>();
+            for (UserInfo userInfo : UserManager.get(mContext).getAliveUsers()) {
+                packages.addAll(
+                        AppGlobals.getPackageManager().getPackagesHoldingPermissions(
+                                new String[]{Manifest.permission.INTERNET},
+                                PackageManager.MATCH_UNINSTALLED_PACKAGES,
+                                userInfo.id
+                        ).getList());
+            }
+            Set<Integer> uidSet = packages.stream().map(
+                    packageInfo -> packageInfo.applicationInfo.uid)
+                    .collect(Collectors.toSet());
+            final String uids = getUidStringFromSet(uidSet);
+            // From packages/modules/Connectivity/framework/src/android/net/ConnectivitySettingsManager.java
+            loadSetting(stmt, "uids_allowed_on_restricted_networks", uids);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to set uids allowed on restricted networks");
         }
     }
 
@@ -2665,5 +2700,17 @@ class DatabaseHelper extends SQLiteOpenHelper {
 
     private TelephonyManager getTelephonyManager() {
         return (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+    }
+
+    // Form packages/modules/Connectivity/framework/src/android/net/ConnectivitySettingsManager.java
+    public static String getUidStringFromSet(Set<Integer> uidList) {
+        final StringJoiner joiner = new StringJoiner(";");
+        for (Integer uid : uidList) {
+            if (uid < 0 || UserHandle.getAppId(uid) > Process.LAST_APPLICATION_UID) {
+                throw new IllegalArgumentException("Invalid uid");
+            }
+            joiner.add(uid.toString());
+        }
+        return joiner.toString();
     }
 }

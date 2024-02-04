@@ -152,6 +152,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -6108,6 +6109,39 @@ public class SettingsProvider extends ContentProvider {
                 }
 
                 // vXXX: Add new settings above this point.
+
+                if (!SystemProperties.getBoolean("persist.sys.sun.network_restrict.init", false)) {
+                    if (userId == UserHandle.USER_OWNER) {
+                        final SettingsState globalSettings = getGlobalSettingsLocked();
+                        globalSettings.insertSettingOverrideableByRestoreLocked(
+                                Global.RESTRICTED_NETWORKING_MODE,
+                                "1", null, true,
+                                SettingsState.SYSTEM_PACKAGE_NAME);
+                        try {
+                            List<PackageInfo> packages = new ArrayList<>();
+                            for (UserInfo userInfo : mUserManager.getAliveUsers()) {
+                                packages.addAll(
+                                        mPackageManager.getPackagesHoldingPermissions(
+                                                new String[]{Manifest.permission.INTERNET},
+                                                PackageManager.MATCH_UNINSTALLED_PACKAGES,
+                                                userInfo.id
+                                        ).getList());
+                            }
+                            Set<Integer> uidSet = packages.stream().map(
+                                    packageInfo -> packageInfo.applicationInfo.uid)
+                                    .collect(Collectors.toSet());
+                            final String uids = DatabaseHelper.getUidStringFromSet(uidSet);
+                            globalSettings.insertSettingOverrideableByRestoreLocked(
+                                    // Form packages/modules/Connectivity/framework/src/android/net/ConnectivitySettingsManager.java
+                                    "uids_allowed_on_restricted_networks",
+                                    uids, null, true,
+                                    SettingsState.SYSTEM_PACKAGE_NAME);
+                        } catch (RemoteException e) {
+                            Slog.e("SettingsProvider", "Failed to set uids allowed on restricted networks");
+                        }
+                    }
+                    SystemProperties.set("persist.sys.sun.network_restrict.init", "true");
+                }
 
                 if (currentVersion != newVersion) {
                     Slog.wtf("SettingsProvider", "warning: upgrading settings database to version "

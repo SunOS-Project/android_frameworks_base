@@ -507,6 +507,14 @@ public class PagedTileLayout extends ViewPager implements QSTileLayout {
         return mMaxColumns;
     }
 
+    @Override
+    public void updateSettings() {
+        for (int i = 0; i < mPages.size(); i++) {
+            mPages.get(i).updateSettings();
+        }
+        mDistributeTiles = true;
+    }
+
     /**
      * Set the amount of excess space that we gave this view compared to the actual available
      * height. This is because this view is in a scrollview.

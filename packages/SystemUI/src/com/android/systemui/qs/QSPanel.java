@@ -803,6 +803,9 @@ public class QSPanel extends LinearLayout {
         boolean updateResources();
 
         /** */
+        void updateSettings();
+
+        /** */
         void setListening(boolean listening, UiEventLogger uiEventLogger);
 
         /** */

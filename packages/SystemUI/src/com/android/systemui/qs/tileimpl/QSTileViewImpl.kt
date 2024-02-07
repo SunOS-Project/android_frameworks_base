@@ -56,6 +56,7 @@ import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
 import androidx.core.graphics.drawable.updateBounds
 import com.android.app.tracing.traceSection
+import com.android.internal.util.sun.TileUtils
 import com.android.settingslib.Utils
 import com.android.systemui.Flags
 import com.android.systemui.FontSizeUtils
@@ -193,6 +194,9 @@ constructor(
 
     private val locInScreen = IntArray(2)
 
+    private var labelHide = false
+    private var vertical = false
+
     /** Visuo-haptic long-press effects */
     private var longPressEffectAnimator: ValueAnimator? = null
     var haveLongPressPropertiesBeenReset = true
@@ -217,8 +221,21 @@ constructor(
             )
         }
         setId(generateViewId())
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL or Gravity.START
+
+        vertical = TileUtils.getQSTileVerticalLayout(context)
+        if (vertical) {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
+        } else {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+        }
+
+        labelHide = TileUtils.getQSTileLabelHide(context)
+        if (labelHide) {
+            gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
+        }
+
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
         clipChildren = false
         clipToPadding = false
@@ -227,7 +244,7 @@ constructor(
         setColor(getBackgroundColorForState(QSTile.State.DEFAULT_STATE))
 
         val padding = resources.getDimensionPixelSize(R.dimen.qs_tile_padding)
-        val startPadding = resources.getDimensionPixelSize(R.dimen.qs_tile_start_padding)
+        val startPadding = if (vertical) padding else resources.getDimensionPixelSize(R.dimen.qs_tile_start_padding)
         setPaddingRelative(startPadding, padding, padding, padding)
 
         val iconSize = resources.getDimensionPixelSize(R.dimen.qs_icon_size)
@@ -267,11 +284,25 @@ constructor(
             width = iconSize
         }
 
+        vertical = TileUtils.getQSTileVerticalLayout(context)
+        if (vertical) {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
+        } else {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+        }
+
+        labelHide = TileUtils.getQSTileLabelHide(context)
+        if (labelHide) {
+            gravity = Gravity.CENTER_HORIZONTAL or Gravity.CENTER_VERTICAL
+        }
+
         val padding = resources.getDimensionPixelSize(R.dimen.qs_tile_padding)
-        val startPadding = resources.getDimensionPixelSize(R.dimen.qs_tile_start_padding)
+        val startPadding = if (vertical) padding else resources.getDimensionPixelSize(R.dimen.qs_tile_start_padding)
         setPaddingRelative(startPadding, padding, padding, padding)
 
-        val labelMargin = resources.getDimensionPixelSize(R.dimen.qs_label_container_margin)
+        val labelMargin = if (vertical) 0 else resources.getDimensionPixelSize(R.dimen.qs_label_container_margin)
         (labelContainer.layoutParams as MarginLayoutParams).apply { marginStart = labelMargin }
 
         (sideView.layoutParams as MarginLayoutParams).apply { marginStart = labelMargin }
@@ -293,7 +324,7 @@ constructor(
 
     private fun createAndAddLabels() {
         labelContainer =
-            LayoutInflater.from(context).inflate(R.layout.qs_tile_label, this, false)
+            LayoutInflater.from(context).inflate(if (vertical) R.layout.qs_tile_label_vertical else R.layout.qs_tile_label, this, false)
                 as IgnorableChildLinearLayout
         label = labelContainer.requireViewById(R.id.tile_label)
         secondaryLabel = labelContainer.requireViewById(R.id.app_label)
@@ -308,7 +339,9 @@ constructor(
         }
         setLabelColor(getLabelColorForState(QSTile.State.DEFAULT_STATE))
         setSecondaryLabelColor(getSecondaryLabelColorForState(QSTile.State.DEFAULT_STATE))
-        addView(labelContainer)
+        if (!labelHide) {
+            addView(labelContainer)
+        }
     }
 
     private fun createAndAddSideView() {
@@ -818,7 +851,7 @@ constructor(
             customDrawableView.setImageDrawable(state.sideViewCustomDrawable)
             customDrawableView.visibility = VISIBLE
             chevronView.visibility = GONE
-        } else if (state !is AdapterState || state.forceExpandIcon) {
+        } else if ((state !is AdapterState || state.forceExpandIcon) && !vertical && !labelHide) {
             customDrawableView.setImageDrawable(null)
             customDrawableView.visibility = GONE
             chevronView.visibility = VISIBLE

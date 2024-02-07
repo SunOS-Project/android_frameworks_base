@@ -23,6 +23,8 @@ import static com.android.systemui.qs.dagger.QSScopeModule.QS_USING_MEDIA_PLAYER
 import static org.sun.provider.SettingsExt.System.QS_BRIGHTNESS_SLIDER_POSITION;
 import static org.sun.provider.SettingsExt.System.QS_SHOW_AUTO_BRIGHTNESS;
 import static org.sun.provider.SettingsExt.System.QS_SHOW_BRIGHTNESS_SLIDER;
+import static org.sun.provider.SettingsExt.System.QS_TILE_LABEL_HIDE;
+import static org.sun.provider.SettingsExt.System.QS_TILE_VERTICAL_LAYOUT;
 
 import android.content.Context;
 import android.database.ContentObserver;
@@ -163,6 +165,15 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
                                 QS_SHOW_AUTO_BRIGHTNESS, 1,
                                 mUserTracker.getUserId()));
                         break;
+                    case QS_TILE_LABEL_HIDE:
+                    case QS_TILE_VERTICAL_LAYOUT:
+                        if (mView.getTileLayout() != null) {
+                            mView.getTileLayout().updateSettings();
+                            mForceUpdate = true;
+                            setTiles();
+                            mForceUpdate = false;
+                        }
+                        break;
                 }
             }
         };
@@ -200,6 +211,10 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         mSystemSettings.registerContentObserverForUserSync(QS_SHOW_AUTO_BRIGHTNESS,
                 mSettingsObserver, UserHandle.USER_ALL);
         mSystemSettings.registerContentObserverForUserSync(QS_SHOW_BRIGHTNESS_SLIDER,
+                mSettingsObserver, UserHandle.USER_ALL);
+        mSystemSettings.registerContentObserverForUserSync(QS_TILE_LABEL_HIDE,
+                mSettingsObserver, UserHandle.USER_ALL);
+        mSystemSettings.registerContentObserverForUserSync(QS_TILE_VERTICAL_LAYOUT,
                 mSettingsObserver, UserHandle.USER_ALL);
         mUserTracker.addCallback(mUserTrackerCallback, mMainExecutor);
         updateSettings();
@@ -252,6 +267,12 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         mView.updateAutoBrightnessVisibility(mSystemSettings.getIntForUser(
                 QS_SHOW_AUTO_BRIGHTNESS, 1,
                 mUserTracker.getUserId()));
+        if (mView.getTileLayout() != null) {
+            mView.getTileLayout().updateSettings();
+            mForceUpdate = true;
+            setTiles();
+            mForceUpdate = false;
+        }
     }
 
     @Override

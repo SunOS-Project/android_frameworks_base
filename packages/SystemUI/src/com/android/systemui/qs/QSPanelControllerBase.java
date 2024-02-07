@@ -100,6 +100,8 @@ public abstract class QSPanelControllerBase<T extends QSPanel> extends ViewContr
 
     private boolean mDestroyed = false;
 
+    protected boolean mForceUpdate = false;
+
     private boolean mMediaVisibleFromInteractor;
 
     private final Consumer<Boolean> mMediaOrRecommendationVisibleConsumer = mediaVisible -> {
@@ -283,7 +285,7 @@ public abstract class QSPanelControllerBase<T extends QSPanel> extends ViewContr
         if (!collapsedView && mQsTileRevealController != null) {
             mQsTileRevealController.updateRevealedTiles(tiles);
         }
-        boolean shouldChangeAll = false;
+        boolean shouldChangeAll = mForceUpdate;
         // If the new tiles are a prefix of the old tiles, we delete the extra tiles (from the old).
         // If not (even if they share a prefix) we remove all and add all the new ones.
         if (tiles.size() <= mRecords.size()) {

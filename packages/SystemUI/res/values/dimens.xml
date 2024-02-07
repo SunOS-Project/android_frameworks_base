@@ -528,14 +528,14 @@
 
     <!-- QQS Brightness slider -->
     <dimen name="qqs_top_brightness_margin_top">4dp</dimen>
-    <dimen name="qqs_top_brightness_margin_bottom">8dp</dimen>
-    <dimen name="qqs_bottom_brightness_margin_top">8dp</dimen>
-    <dimen name="qqs_bottom_brightness_margin_bottom">4dp</dimen>
+    <dimen name="qqs_top_brightness_margin_bottom">16dp</dimen>
+    <dimen name="qqs_bottom_brightness_margin_top">16dp</dimen>
+    <dimen name="qqs_bottom_brightness_margin_bottom">0dp</dimen>
 
     <!-- QS Brightness slider -->
-    <dimen name="qs_top_brightness_margin_top">4dp</dimen>
-    <dimen name="qs_top_brightness_margin_bottom">8dp</dimen>
-    <dimen name="qs_bottom_brightness_margin_top">8dp</dimen>
+    <dimen name="qs_top_brightness_margin_top">8dp</dimen>
+    <dimen name="qs_top_brightness_margin_bottom">16dp</dimen>
+    <dimen name="qs_bottom_brightness_margin_top">16dp</dimen>
     <dimen name="qs_bottom_brightness_margin_bottom">4dp</dimen>
 
     <!-- In split shade mode notifications should be aligned to QS header so the value should be

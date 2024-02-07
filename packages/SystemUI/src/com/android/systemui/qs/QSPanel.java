@@ -670,8 +670,8 @@ public class QSPanel extends LinearLayout {
                     horizontal && mUsingMediaPlayer ? mHorizontalContentContainer : this;
             if (SceneContainerFlag.isEnabled()) return;
             switchAllContentToParent(newParent, mTileLayout);
+            updateResources();
             if (mBrightnessRunnable != null) {
-                updateResources();
                 mBrightnessRunnable.run();
             }
             reAttachMediaHost(mediaHostView, horizontal);
@@ -721,8 +721,8 @@ public class QSPanel extends LinearLayout {
         if (mBrightnessView == null) return;
         ViewGroup newParent = mUsingHorizontalLayout ? mHorizontalContentContainer : this;
         switchAllContentToParent(newParent, mTileLayout);
+        updateResources();
         if (mBrightnessRunnable != null) {
-            updateResources();
             mBrightnessRunnable.run();
         }
     }

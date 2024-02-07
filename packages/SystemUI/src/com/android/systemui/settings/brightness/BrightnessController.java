@@ -20,8 +20,11 @@ import static com.android.settingslib.display.BrightnessUtils.GAMMA_SPACE_MAX;
 import static com.android.settingslib.display.BrightnessUtils.convertGammaToLinearFloat;
 import static com.android.settingslib.display.BrightnessUtils.convertLinearToGammaFloat;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_QS_TILE;
 import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_SLIDER;
 
+import static vendor.sun.hardware.vibratorExt.Effect.BUTTON_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
 import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_EDGE;
 import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_STEP;
 
@@ -338,11 +341,19 @@ public class BrightnessController implements ToggleSlider.Listener, MirroredBrig
         mBrightnessObserver = new BrightnessObserver(mMainHandler);
 
         mIcon = control.getIcon();
-        mIcon.setOnClickListener(v -> Settings.System.putIntForUser(mContext.getContentResolver(),
-                Settings.System.SCREEN_BRIGHTNESS_MODE, mAutomatic ?
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL :
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
-                UserHandle.USER_CURRENT));
+        mIcon.setOnClickListener(v -> {
+            v.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                    .setEffectId(BUTTON_CLICK)
+                    .setFallbackEffectId(CLICK)
+                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+                    .build()
+            );
+            Settings.System.putIntForUser(mContext.getContentResolver(),
+                    Settings.System.SCREEN_BRIGHTNESS_MODE, mAutomatic ?
+                        Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL :
+                        Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC,
+                    UserHandle.USER_CURRENT);
+        });
     }
 
     public void registerCallbacks() {

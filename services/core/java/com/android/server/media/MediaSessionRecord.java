@@ -1823,13 +1823,13 @@ public class MediaSessionRecord extends MediaSessionRecordImpl implements IBinde
             synchronized (mLock) {
                 int index = getControllerHolderIndexForCb(cb);
                 if (index != -1) {
+                    final ISessionControllerCallbackHolder holder = mControllerCallbackHolders.get(index);
                     try {
-                        cb.asBinder().unlinkToDeath(
-                          mControllerCallbackHolders.get(index).mDeathMonitor, 0);
+                        cb.asBinder().unlinkToDeath(holder.mDeathMonitor, 0);
                     } catch (NoSuchElementException e) {
                         Slog.w(TAG, "error unlinking to binder death", e);
                     }
-                    mControllerCallbackHolders.remove(index);
+                    mControllerCallbackHolders.remove(holder);
                 }
                 if (DEBUG) {
                     Slog.d(TAG, "unregistering callback " + cb.asBinder());

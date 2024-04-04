@@ -462,11 +462,8 @@ public class ResolverActivity extends Activity implements
         // turn this off when running under voice interaction, since it results in
         // a more complicated UI that the current voice interaction flow is not able
         // to handle. We also turn it off when the work tab is shown to simplify the UX.
-        // We also turn it off when clonedProfile is present on the device, because we might have
-        // different "last chosen" activities in the different profiles, and PackageManager doesn't
-        // provide any more information to help us select between them.
         boolean filterLastUsed = mSupportsAlwaysUseOption && !isVoiceInteraction()
-                && !shouldShowTabs() && !hasCloneProfile();
+                && !shouldShowTabs();
         mMultiProfilePagerAdapter = createMultiProfilePagerAdapter(initialIntents, rList, filterLastUsed);
         if (configureContentView()) {
             return;
@@ -1278,14 +1275,6 @@ public class ResolverActivity extends Activity implements
             boolean filtered) {
         if (!mMultiProfilePagerAdapter.getCurrentUserHandle().equals(getUser())) {
             // Never allow the inactive profile to always open an app.
-            mAlwaysButton.setEnabled(false);
-            return;
-        }
-        // In case of clonedProfile being active, we do not allow the 'Always' option in the
-        // disambiguation dialog of Personal Profile as the package manager cannot distinguish
-        // between cross-profile preferred activities.
-        if (hasCloneProfile() && !mMultiProfilePagerAdapter
-                .getCurrentUserHandle().equals(mWorkProfileUserHandle)) {
             mAlwaysButton.setEnabled(false);
             return;
         }

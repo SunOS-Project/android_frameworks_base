@@ -224,6 +224,7 @@ class AppListRepositoryImpl(
             hideWhenDisabledPackages: Array<String>,
         ) = when {
             !showInstantApps && isInstantApp -> false
+            isResourceOverlay -> false
             packageName in hiddenSystemModules -> false
             packageName in hideWhenDisabledPackages -> enabled && !isDisabledUntilUsed
             enabled -> true

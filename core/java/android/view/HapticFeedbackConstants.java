@@ -204,6 +204,13 @@ public class HapticFeedbackConstants {
     public static final int SEGMENT_FREQUENT_TICK = 27;
 
     /**
+     * Oplus frameworks haptic effect id. Used in settings toggles.
+     *
+     * @hide
+     */
+    public static final int GRANULAR_SHORT_VIBRATE = 302;
+
+    /**
      * The phone has booted with safe mode enabled.
      * This is a private constant.  Feel free to renumber as desired.
      * @hide

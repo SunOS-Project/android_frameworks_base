@@ -401,6 +401,14 @@ KotlinOperator: android.graphics.Matrix44#set(int, int, float):
     Method can be invoked with an indexing operator from Kotlin: `set` (this is usually desirable; just make sure it makes sense for this type of object)
 
 
+MissingGetterMatchingBuilder: com.oplus.os.WaveformEffect.Builder#setAsynchronous(boolean):
+    com.oplus.os.WaveformEffect does not declare a `isAsynchronous()` method matching method com.oplus.os.WaveformEffect.Builder.setAsynchronous(boolean)
+MissingGetterMatchingBuilder: com.oplus.os.WaveformEffect.Builder#setEffectLoop(boolean):
+    com.oplus.os.WaveformEffect does not declare a `isEffectLoop()` method matching method com.oplus.os.WaveformEffect.Builder.setEffectLoop(boolean)
+MissingGetterMatchingBuilder: com.oplus.os.WaveformEffect.Builder#setStrengthSettingEnabled(boolean):
+    com.oplus.os.WaveformEffect does not declare a `isStrengthSettingEnabled()` method matching method com.oplus.os.WaveformEffect.Builder.setStrengthSettingEnabled(boolean)
+
+
 MissingNullability: android.os.VibrationExtInfo#CREATOR:
     Missing nullability on field `CREATOR` in class `class android.os.VibrationExtInfo`
 MissingNullability: android.os.VibrationExtInfo#writeToParcel(android.os.Parcel, int) parameter #0:
@@ -409,10 +417,42 @@ MissingNullability: android.os.VibrationExtInfo.Builder#setReason(String) parame
     Missing nullability on parameter `reason` in method `setReason`
 MissingNullability: android.os.VibrationExtInfo.Builder#setVibrationAttributes(android.os.VibrationAttributes) parameter #0:
     Missing nullability on parameter `attrs` in method `setVibrationAttributes`
+MissingNullability: com.oplus.os.ILinearmotorVibratorService#vibrate(com.oplus.os.WaveformEffect) parameter #0:
+    Missing nullability on parameter `effect` in method `vibrate`
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Default#asBinder():
+    Missing nullability on method `asBinder` return
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Default#vibrate(com.oplus.os.WaveformEffect) parameter #0:
+    Missing nullability on parameter `effect` in method `vibrate`
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Stub#asBinder():
+    Missing nullability on method `asBinder` return
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Stub#asInterface(android.os.IBinder):
+    Missing nullability on method `asInterface` return
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Stub#asInterface(android.os.IBinder) parameter #0:
+    Missing nullability on parameter `obj` in method `asInterface`
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Stub#onTransact(int, android.os.Parcel, android.os.Parcel, int) parameter #1:
+    Missing nullability on parameter `data` in method `onTransact`
+MissingNullability: com.oplus.os.ILinearmotorVibratorService.Stub#onTransact(int, android.os.Parcel, android.os.Parcel, int) parameter #2:
+    Missing nullability on parameter `reply` in method `onTransact`
+MissingNullability: com.oplus.os.WaveformEffect#writeToParcel(android.os.Parcel, int) parameter #0:
+    Missing nullability on parameter `dest` in method `writeToParcel`
+MissingNullability: com.oplus.os.WaveformEffect.Builder#Builder(com.oplus.os.WaveformEffect) parameter #0:
+    Missing nullability on parameter `effect` in method `Builder`
+
+
+ParcelCreator: com.oplus.os.WaveformEffect:
+    Parcelable requires a `CREATOR` field; missing in com.oplus.os.WaveformEffect
 
 
 ParcelNotFinal: android.os.VibrationExtInfo:
     Parcelable classes must be final: android.os.VibrationExtInfo is not final
+ParcelNotFinal: com.oplus.os.WaveformEffect:
+    Parcelable classes must be final: com.oplus.os.WaveformEffect is not final
+
+
+RawAidl: com.oplus.os.ILinearmotorVibratorService:
+    Raw AIDL interfaces must not be exposed: ILinearmotorVibratorService implements IInterface
+RawAidl: com.oplus.os.ILinearmotorVibratorService.Stub:
+    Raw AIDL interfaces must not be exposed: Stub extends Binder
 
 
 RequiresPermission: android.accounts.AccountManager#getAccountsByTypeAndFeatures(String, String[], android.accounts.AccountManagerCallback<android.accounts.Account[]>, android.os.Handler):
@@ -1107,8 +1147,22 @@ RequiresPermission: android.webkit.WebSettings#setGeolocationEnabled(boolean):
     Method 'setGeolocationEnabled' documentation mentions permissions without declaring @RequiresPermission
 
 
+RethrowRemoteException: com.oplus.os.ILinearmotorVibratorService#cancelVibrate():
+    Methods calling system APIs should rethrow `RemoteException` as `RuntimeException` (but do not list it in the throws clause)
+RethrowRemoteException: com.oplus.os.ILinearmotorVibratorService#vibrate(com.oplus.os.WaveformEffect):
+    Methods calling system APIs should rethrow `RemoteException` as `RuntimeException` (but do not list it in the throws clause)
+RethrowRemoteException: com.oplus.os.ILinearmotorVibratorService.Default#cancelVibrate():
+    Methods calling system APIs should rethrow `RemoteException` as `RuntimeException` (but do not list it in the throws clause)
+RethrowRemoteException: com.oplus.os.ILinearmotorVibratorService.Default#vibrate(com.oplus.os.WaveformEffect):
+    Methods calling system APIs should rethrow `RemoteException` as `RuntimeException` (but do not list it in the throws clause)
+RethrowRemoteException: com.oplus.os.ILinearmotorVibratorService.Stub#onTransact(int, android.os.Parcel, android.os.Parcel, int):
+    Methods calling system APIs should rethrow `RemoteException` as `RuntimeException` (but do not list it in the throws clause)
+
+
 StaticFinalBuilder: android.os.VibrationExtInfo.Builder:
     Builder must be final: android.os.VibrationExtInfo.Builder
+StaticFinalBuilder: com.oplus.os.WaveformEffect.Builder:
+    Builder must be final: com.oplus.os.WaveformEffect.Builder
 
 
 Todo: android.hardware.camera2.params.StreamConfigurationMap:
@@ -1700,3 +1754,83 @@ UnflaggedApi: android.view.inputmethod.InlineSuggestionsRequest.Builder#setClien
     New API must be flagged with @FlaggedApi: method android.view.inputmethod.InlineSuggestionsRequest.Builder.setClientSupported(boolean)
 UnflaggedApi: android.view.inputmethod.InlineSuggestionsRequest.Builder#setServiceSupported(boolean):
     New API must be flagged with @FlaggedApi: method android.view.inputmethod.InlineSuggestionsRequest.Builder.setServiceSupported(boolean)
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.ILinearmotorVibratorService
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService#cancelVibrate():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.cancelVibrate()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService#vibrate(com.oplus.os.WaveformEffect):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.vibrate(com.oplus.os.WaveformEffect)
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Default:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.ILinearmotorVibratorService.Default
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Default#Default():
+    New API must be flagged with @FlaggedApi: constructor com.oplus.os.ILinearmotorVibratorService.Default()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Default#asBinder():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Default.asBinder()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Default#cancelVibrate():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Default.cancelVibrate()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Default#vibrate(com.oplus.os.WaveformEffect):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Default.vibrate(com.oplus.os.WaveformEffect)
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Stub:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.ILinearmotorVibratorService.Stub
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Stub#Stub():
+    New API must be flagged with @FlaggedApi: constructor com.oplus.os.ILinearmotorVibratorService.Stub()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Stub#asBinder():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Stub.asBinder()
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Stub#asInterface(android.os.IBinder):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Stub.asInterface(android.os.IBinder)
+UnflaggedApi: com.oplus.os.ILinearmotorVibratorService.Stub#onTransact(int, android.os.Parcel, android.os.Parcel, int):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.ILinearmotorVibratorService.Stub.onTransact(int,android.os.Parcel,android.os.Parcel,int)
+UnflaggedApi: com.oplus.os.LinearmotorVibrator:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.LinearmotorVibrator
+UnflaggedApi: com.oplus.os.LinearmotorVibrator#cancelVibrate(com.oplus.os.WaveformEffect, android.os.IBinder):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.LinearmotorVibrator.cancelVibrate(com.oplus.os.WaveformEffect,android.os.IBinder)
+UnflaggedApi: com.oplus.os.LinearmotorVibrator#vibrate(com.oplus.os.WaveformEffect):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.LinearmotorVibrator.vibrate(com.oplus.os.WaveformEffect)
+UnflaggedApi: com.oplus.os.WaveformEffect:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.WaveformEffect
+UnflaggedApi: com.oplus.os.WaveformEffect#EFFECT_INVALID:
+    New API must be flagged with @FlaggedApi: field com.oplus.os.WaveformEffect.EFFECT_INVALID
+UnflaggedApi: com.oplus.os.WaveformEffect#STRENGTH_DEFAULT:
+    New API must be flagged with @FlaggedApi: field com.oplus.os.WaveformEffect.STRENGTH_DEFAULT
+UnflaggedApi: com.oplus.os.WaveformEffect#STRENGTH_LIGHT:
+    New API must be flagged with @FlaggedApi: field com.oplus.os.WaveformEffect.STRENGTH_LIGHT
+UnflaggedApi: com.oplus.os.WaveformEffect#STRENGTH_MEDIUM:
+    New API must be flagged with @FlaggedApi: field com.oplus.os.WaveformEffect.STRENGTH_MEDIUM
+UnflaggedApi: com.oplus.os.WaveformEffect#STRENGTH_STRONG:
+    New API must be flagged with @FlaggedApi: field com.oplus.os.WaveformEffect.STRENGTH_STRONG
+UnflaggedApi: com.oplus.os.WaveformEffect#describeContents():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.describeContents()
+UnflaggedApi: com.oplus.os.WaveformEffect#getAsynchronous():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getAsynchronous()
+UnflaggedApi: com.oplus.os.WaveformEffect#getEffectLoop():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getEffectLoop()
+UnflaggedApi: com.oplus.os.WaveformEffect#getEffectStrength():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getEffectStrength()
+UnflaggedApi: com.oplus.os.WaveformEffect#getEffectType():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getEffectType()
+UnflaggedApi: com.oplus.os.WaveformEffect#getStrengthSettingEnabled():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getStrengthSettingEnabled()
+UnflaggedApi: com.oplus.os.WaveformEffect#getUsageHint():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.getUsageHint()
+UnflaggedApi: com.oplus.os.WaveformEffect#writeToParcel(android.os.Parcel, int):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.writeToParcel(android.os.Parcel,int)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder:
+    New API must be flagged with @FlaggedApi: class com.oplus.os.WaveformEffect.Builder
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#Builder():
+    New API must be flagged with @FlaggedApi: constructor com.oplus.os.WaveformEffect.Builder()
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#Builder(com.oplus.os.WaveformEffect):
+    New API must be flagged with @FlaggedApi: constructor com.oplus.os.WaveformEffect.Builder(com.oplus.os.WaveformEffect)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#build():
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.build()
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setAsynchronous(boolean):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setAsynchronous(boolean)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setEffectLoop(boolean):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setEffectLoop(boolean)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setEffectStrength(int):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setEffectStrength(int)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setEffectType(int):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setEffectType(int)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setStrengthSettingEnabled(boolean):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setStrengthSettingEnabled(boolean)
+UnflaggedApi: com.oplus.os.WaveformEffect.Builder#setUsageHint(int):
+    New API must be flagged with @FlaggedApi: method com.oplus.os.WaveformEffect.Builder.setUsageHint(int)

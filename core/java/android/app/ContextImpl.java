@@ -2223,6 +2223,9 @@ class ContextImpl extends Context {
 
     @Override
     public Object getSystemService(String name) {
+        if (ContextImplExt.interceptGetSystemService(name, getPackageName())) {
+            return null;
+        }
         if (vmIncorrectContextUseEnabled()) {
             // Check incorrect Context usage.
             if (WINDOW_SERVICE.equals(name) && !isUiContext()) {

@@ -287,6 +287,7 @@ java_genrule {
 
 packages_to_document = [
     "android",
+    "com.oplus.os",
     "dalvik",
     "java",
     "javax",

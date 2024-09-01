@@ -175,6 +175,9 @@ public final class HapticFeedbackVibrationProvider {
                         /* primitiveScale= */ 0.2f,
                         VibrationEffect.EFFECT_TEXTURE_TICK);
 
+            case HapticFeedbackConstants.GRANULAR_SHORT_VIBRATE:
+                return VibrationEffect.get(VibrationEffect.EFFECT_CLICK);
+
             case HapticFeedbackConstants.NO_HAPTICS:
             default:
                 return null;

@@ -41,7 +41,7 @@
             android:dropDownWidth="274dp"
             android:importantForAccessibility="yes"/>
 
-        <Switch
+        <org.sun.custom.preference.Switch
             android:layout_width="wrap_content"
             android:minWidth="48dp"
             android:layout_height="48dp"
@@ -76,7 +76,7 @@
             android:textColor="?android:attr/textColorPrimary"
             android:contentDescription="@string/screenrecord_taps_label"/>
 
-        <Switch
+        <org.sun.custom.preference.Switch
             android:layout_width="wrap_content"
             android:minWidth="48dp"
             android:layout_height="48dp"

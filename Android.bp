@@ -265,6 +265,8 @@ java_library {
         "com.android.sysprop.init",
         "com.android.sysprop.localization",
         "PlatformProperties",
+
+        "vendor.sun.hardware.vibratorExt-V1-java",
     ],
     sdk_version: "core_platform",
     installable: false,

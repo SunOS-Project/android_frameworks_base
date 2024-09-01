@@ -147,6 +147,22 @@ public class SystemVibratorManager extends VibratorManager {
     }
 
     @Override
+    public void vibrateExt(int uid, String opPkg, int effectId,
+            int fallbackEffectId, float amplitude, String reason,
+            @NonNull VibrationAttributes attributes) {
+        if (mService == null) {
+            Log.w(TAG, "Failed to vibrate; no vibrator manager service.");
+            return;
+        }
+        try {
+            mService.vibrateExt(uid, mContext.getDeviceId(), opPkg,
+                    effectId, fallbackEffectId, amplitude, reason, attributes, mToken);
+        } catch (RemoteException e) {
+            Log.w(TAG, "Failed to vibrate.", e);
+        }
+    }
+
+    @Override
     public void performHapticFeedback(int constant, boolean always, String reason,
             boolean fromIme) {
         if (mService == null) {
@@ -242,6 +258,12 @@ public class SystemVibratorManager extends VibratorManager {
                     .addVibrator(mVibratorInfo.getId(), vibe)
                     .combine();
             SystemVibratorManager.this.vibrate(uid, opPkg, combined, reason, attributes);
+        }
+
+        @Override
+        public void vibrateExt(int uid, String opPkg, int effectId, int fallbackEffectId,
+                float amplitude, String reason, @NonNull VibrationAttributes attributes) {
+            SystemVibratorManager.this.vibrateExt(uid, opPkg, effectId, fallbackEffectId, amplitude, reason, attributes);
         }
 
         @Override

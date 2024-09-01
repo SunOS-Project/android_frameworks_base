@@ -20,6 +20,7 @@ import static com.android.systemui.Flags.hapticBrightnessSlider;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.VibrationExtInfo;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -212,6 +213,11 @@ public class BrightnessSliderController extends ViewController<BrightnessSliderV
     @Override
     public int getValue() {
         return mView.getValue();
+    }
+
+    @Override
+    public void performHapticFeedbackExt(VibrationExtInfo info) {
+        mView.performHapticFeedbackExt(info);
     }
 
     @Override

@@ -19,6 +19,11 @@ package com.android.systemui.statusbar.phone;
 import static com.android.systemui.keyguard.WakefulnessLifecycle.WAKEFULNESS_AWAKE;
 import static com.android.systemui.keyguard.WakefulnessLifecycle.WAKEFULNESS_WAKING;
 
+import static vendor.sun.hardware.vibratorExt.Effect.BUTTON_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.QUICK_CAMERA;
+
 import android.annotation.Nullable;
 import android.app.StatusBarManager;
 import android.content.ComponentName;
@@ -29,7 +34,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
-import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.os.Vibrator;
 import android.util.Log;
 import android.util.Slog;
@@ -105,8 +110,6 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
     private final Optional<Vibrator> mVibratorOptional;
     private final int mDisplayId;
     private final UserTracker mUserTracker;
-    private final boolean mVibrateOnOpening;
-    private final VibrationEffect mCameraLaunchGestureVibrationEffect;
     private final ActivityStarter mActivityStarter;
     private final Lazy<CameraLauncher> mCameraLauncherLazy;
     private final QuickSettingsController mQsController;
@@ -181,9 +184,6 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
         mUserTracker = userTracker;
         mQSHost = qsHost;
 
-        mVibrateOnOpening = resources.getBoolean(R.bool.config_vibrateOnIconAnimation);
-        mCameraLaunchGestureVibrationEffect = getCameraGestureVibrationEffect(
-                mVibratorOptional, resources);
         mActivityStarter = activityStarter;
         mEmergencyGestureIntentFactory = emergencyGestureIntentFactory;
     }
@@ -322,9 +322,7 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
         } else if (KeyEvent.KEYCODE_SYSTEM_NAVIGATION_DOWN == key.getKeyCode()) {
             mMetricsLogger.action(MetricsEvent.ACTION_SYSTEM_NAVIGATION_KEY_DOWN);
             if (mPanelExpansionInteractor.isFullyCollapsed()) {
-                if (mVibrateOnOpening) {
-                    vibrateOnNavigationKeyDown();
-                }
+                vibrateOnNavigationKeyDown();
                 mShadeController.animateExpandShade();
                 mNotificationStackScrollLayoutController.setWillExpand(true);
                 mHeadsUpManager.unpinAll(true /* userUnpinned */);
@@ -543,41 +541,21 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
 
     private void vibrateForCameraGesture() {
         mVibratorOptional.ifPresent(
-                v -> v.vibrate(mCameraLaunchGestureVibrationEffect,
-                        HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES));
-    }
-
-    private static VibrationEffect getCameraGestureVibrationEffect(
-            Optional<Vibrator> vibratorOptional, Resources resources) {
-        if (vibratorOptional.isPresent() && vibratorOptional.get().areAllPrimitivesSupported(
-                VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
-                VibrationEffect.Composition.PRIMITIVE_CLICK)) {
-            return VibrationEffect.startComposition()
-                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_QUICK_RISE)
-                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1, 50)
-                    .compose();
-        }
-        if (vibratorOptional.isPresent() && vibratorOptional.get().hasAmplitudeControl()) {
-            // Make sure to pass -1 for repeat so VibratorManagerService doesn't stop us when going
-            // to sleep.
-            return VibrationEffect.createWaveform(
-                    CentralSurfaces.CAMERA_LAUNCH_GESTURE_VIBRATION_TIMINGS,
-                    CentralSurfaces.CAMERA_LAUNCH_GESTURE_VIBRATION_AMPLITUDES,
-                    /* repeat= */ -1);
-        }
-
-        int[] pattern = resources.getIntArray(R.array.config_cameraLaunchGestureVibePattern);
-        long[] timings = new long[pattern.length];
-        for (int i = 0; i < pattern.length; i++) {
-            timings[i] = pattern[i];
-        }
-        return VibrationEffect.createWaveform(timings, /* repeat= */ -1);
+                v -> v.vibrateExt(new VibrationExtInfo.Builder()
+                        .setEffectId(QUICK_CAMERA)
+                        .setFallbackEffectId(DOUBLE_CLICK)
+                        .build()
+                )
+        );
     }
 
     @VisibleForTesting
     void vibrateOnNavigationKeyDown() {
-        mShadeController.performHapticFeedback(
-                HapticFeedbackConstants.GESTURE_START
+        mShadeController.performHapticFeedbackExt(
+            new VibrationExtInfo.Builder()
+                .setEffectId(BUTTON_CLICK)
+                .setFallbackEffectId(CLICK)
+                .build()
         );
     }
 }

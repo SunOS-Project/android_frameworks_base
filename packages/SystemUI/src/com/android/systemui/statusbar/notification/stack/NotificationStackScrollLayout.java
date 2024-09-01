@@ -31,6 +31,10 @@ import static com.android.systemui.util.DumpUtilsKt.visibilityString;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_MISC_SCENES;
+
+import static vendor.sun.hardware.vibratorExt.Effect.CLEAR_ALL_NOTIFICATION;
+
 import android.annotation.ColorInt;
 import android.annotation.DrawableRes;
 import android.annotation.FloatRange;
@@ -51,6 +55,7 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.IndentingPrintWriter;
@@ -4577,6 +4582,11 @@ public class NotificationStackScrollLayout
                 if (mFooterClearAllListener != null) {
                     mFooterClearAllListener.onClearAll();
                 }
+                v.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                        .setEffectId(CLEAR_ALL_NOTIFICATION)
+                        .setVibrationAttributes(VIBRATION_ATTRIBUTES_MISC_SCENES)
+                        .build()
+                );
                 clearNotifications(ROWS_ALL, true /* closeShade */);
                 footerView.setClearAllButtonVisible(false /* visible */, true /* animate */);
             });

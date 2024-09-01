@@ -17,6 +17,8 @@
 package com.android.settingslib;
 
 import android.content.Context;
+import android.os.VibrationAttributes;
+import android.os.VibrationExtInfo;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -37,6 +39,9 @@ import com.android.settingslib.core.instrumentation.SettingsJankMonitor;
  * optional fields for icon and sub-text. And it can be restricted by admin state.
  */
 public class PrimarySwitchPreference extends RestrictedPreference {
+
+    private static final VibrationAttributes VIBRATION_ATTRIBUTES_SWITCH =
+            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_CUSTOM_SWITCH);
 
     private CompoundButton mSwitch;
     private boolean mChecked;
@@ -84,6 +89,12 @@ public class PrimarySwitchPreference extends RestrictedPreference {
                     setChecked(newChecked);
                     persistBoolean(newChecked);
                 }
+                mSwitch.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                        .setEffectId(VibrationExtInfo.SWITCH_TOGGLE)
+                        .setFallbackEffectId(VibrationExtInfo.CLICK)
+                        .setVibrationAttributes(VIBRATION_ATTRIBUTES_SWITCH)
+                        .build()
+                );
             });
 
             // Consumes move events to ignore drag actions.

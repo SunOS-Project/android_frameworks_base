@@ -22,6 +22,8 @@ import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.os.VibrationAttributes;
+import android.os.VibrationExtInfo;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +46,9 @@ import java.util.List;
  */
 public class MainSwitchBar extends LinearLayout implements OnCheckedChangeListener {
 
+    private static final VibrationAttributes VIBRATION_ATTRIBUTES_SWITCH =
+            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_CUSTOM_SWITCH);
+
     private final List<OnCheckedChangeListener> mSwitchChangeListeners = new ArrayList<>();
 
     @ColorInt
@@ -54,6 +59,8 @@ public class MainSwitchBar extends LinearLayout implements OnCheckedChangeListen
     protected TextView mTextView;
     protected CompoundButton mSwitch;
     private final View mFrameView;
+
+    private boolean mShouldVibrate = true;
 
     public MainSwitchBar(Context context) {
         this(context, null);
@@ -123,6 +130,14 @@ public class MainSwitchBar extends LinearLayout implements OnCheckedChangeListen
     @Override
     public boolean performClick() {
         mSwitch.performClick();
+        if (mShouldVibrate) {
+            mSwitch.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                    .setEffectId(VibrationExtInfo.SWITCH_TOGGLE)
+                    .setFallbackEffectId(VibrationExtInfo.CLICK)
+                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_SWITCH)
+                    .build()
+            );
+        }
         return super.performClick();
     }
 
@@ -163,6 +178,13 @@ public class MainSwitchBar extends LinearLayout implements OnCheckedChangeListen
             params.setMarginStart(iconSpaceReserved ? iconSpace : 0);
             mTextView.setLayoutParams(params);
         }
+    }
+
+    /**
+     * Set whether to vibrate on click
+     */
+    public void setShouldVibrate(boolean vibrate) {
+        mShouldVibrate = vibrate;
     }
 
     /**

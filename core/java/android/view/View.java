@@ -139,6 +139,7 @@ import android.os.RemoteCallback;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.os.VibrationExtInfo;
 import android.os.Vibrator;
 import android.os.vibrator.Flags;
 import android.service.credentials.CredentialProviderService;
@@ -28648,6 +28649,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         return mAttachInfo.mRootCallbacks.performHapticFeedback(feedbackConstant, always, fromIme);
     }
 
+    public void performHapticFeedbackExt(@NonNull VibrationExtInfo info) {
+        if (mAttachInfo == null) {
+            return;
+        }
+        mAttachInfo.mRootCallbacks.performHapticFeedbackExt(info);
+    }
+
     private Vibrator getSystemVibrator() {
         if (mVibrator != null) {
             return mVibrator;
@@ -31680,6 +31688,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         interface Callbacks {
             void playSoundEffect(int effectId);
             boolean performHapticFeedback(int effectId, boolean always, boolean fromIme);
+            void performHapticFeedbackExt(VibrationExtInfo info);
         }
 
         /**

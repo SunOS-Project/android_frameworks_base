@@ -56,6 +56,8 @@ abstract class Vibration {
     public final VibrationStats stats = new VibrationStats();
     public final IBinder callerToken;
 
+    public int customEffectId = -1;
+
     /** Vibration status with reference to values from vibratormanagerservice.proto for logging. */
     enum Status {
         UNKNOWN(VibrationProto.UNKNOWN),

@@ -19,6 +19,7 @@ import com.android.keyguard.logging.BiometricUnlockLogger
 import com.android.systemui.biometrics.data.repository.FingerprintPropertyRepository
 import com.android.systemui.biometrics.shared.model.FingerprintSensorType
 import com.android.systemui.dagger.SysUISingleton
+import com.android.systemui.deviceentry.data.repository.DeviceEntryFaceAuthRepository
 import com.android.systemui.keyevent.domain.interactor.KeyEventInteractor
 import com.android.systemui.keyguard.data.repository.BiometricSettingsRepository
 import com.android.systemui.power.domain.interactor.PowerInteractor
@@ -28,6 +29,7 @@ import com.android.systemui.util.time.SystemClock
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.combineTransform
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -47,6 +49,7 @@ class DeviceEntryHapticsInteractor
 @Inject
 constructor(
     deviceEntrySourceInteractor: DeviceEntrySourceInteractor,
+    deviceEntryFaceAuthRepository: DeviceEntryFaceAuthRepository,
     deviceEntryFingerprintAuthInteractor: DeviceEntryFingerprintAuthInteractor,
     deviceEntryBiometricAuthInteractor: DeviceEntryBiometricAuthInteractor,
     fingerprintPropertyRepository: FingerprintPropertyRepository,
@@ -78,6 +81,7 @@ constructor(
                 // `uptimeMillis() - lastPowerButtonWakeup > recentPowerButtonPressThresholdMs`
                 emit(recentPowerButtonPressThresholdMs * -1L - 1L)
             }
+    private val faceAuthenticated: StateFlow<Boolean> = deviceEntryFaceAuthRepository.isAuthenticated
 
     val playSuccessHaptic: Flow<Unit> =
         deviceEntrySourceInteractor.deviceEntryFromBiometricSource
@@ -98,7 +102,7 @@ constructor(
                 if (!allowHaptic) {
                     logger.d("Skip success haptic. Recent power button press or button is down.")
                 }
-                allowHaptic
+                allowHaptic && !faceAuthenticated.value
             }
             .map {} // map to Unit
 

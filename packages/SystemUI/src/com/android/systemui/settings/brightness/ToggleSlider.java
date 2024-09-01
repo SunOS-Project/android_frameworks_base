@@ -16,6 +16,7 @@
 
 package com.android.systemui.settings.brightness;
 
+import android.os.VibrationExtInfo;
 import android.view.MotionEvent;
 
 import com.android.settingslib.RestrictedLockUtils;
@@ -34,6 +35,8 @@ public interface ToggleSlider {
     int getMax();
     void setValue(int value);
     int getValue();
+
+    void performHapticFeedbackExt(VibrationExtInfo info);
 
     void showView();
     void hideView();

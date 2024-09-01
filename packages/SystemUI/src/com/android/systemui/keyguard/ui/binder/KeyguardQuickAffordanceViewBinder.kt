@@ -19,6 +19,7 @@ package com.android.systemui.keyguard.ui.binder
 
 import android.annotation.SuppressLint
 import android.graphics.drawable.Animatable2
+import android.os.VibrationExtInfo
 import android.util.Size
 import android.view.View
 import android.view.ViewGroup
@@ -46,6 +47,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK
+import vendor.sun.hardware.vibratorExt.Effect.LOCKSCREEN_SHORTCUT
+import vendor.sun.hardware.vibratorExt.Effect.HEAVY_CLICK
+import vendor.sun.hardware.vibratorExt.Effect.UNIFIED_ERROR
 
 /** This is only for a SINGLE Quick affordance */
 object KeyguardQuickAffordanceViewBinder {
@@ -227,7 +232,10 @@ object KeyguardQuickAffordanceViewBinder {
                     shakeAnimator.doOnEnd { view.translationX = 0f }
                     shakeAnimator.start()
 
-                    vibratorHelper?.vibrate(KeyguardBottomAreaVibrations.Shake)
+                    vibratorHelper?.vibrateExt(VibrationExtInfo.Builder().apply {
+                        setEffectId(UNIFIED_ERROR)
+                        setFallbackEffectId(DOUBLE_CLICK)
+                    }.build())
                 }
                 view.onLongClickListener =
                     OnLongClickListener(falsingManager, viewModel, vibratorHelper, onTouchListener)
@@ -297,23 +305,15 @@ object KeyguardQuickAffordanceViewBinder {
             }
 
             if (viewModel.configKey != null) {
-                viewModel.onClicked(
-                    KeyguardQuickAffordanceViewModel.OnClickedParameters(
-                        configKey = viewModel.configKey,
-                        expandable = Expandable.fromView(view),
-                        slotId = viewModel.slotId,
-                    )
-                )
-                vibratorHelper?.vibrate(
-                    if (viewModel.isActivated) {
-                        KeyguardBottomAreaVibrations.Activated
-                    } else {
-                        KeyguardBottomAreaVibrations.Deactivated
-                    }
-                )
+                onTouchListener.preActivatedTime = System.currentTimeMillis()
+                vibratorHelper?.vibrateExt(VibrationExtInfo.Builder().apply {
+                    setEffectId(LOCKSCREEN_SHORTCUT)
+                    setFallbackEffectId(HEAVY_CLICK)
+                }.build())
+            } else {
+                onTouchListener.cancel()
             }
 
-            onTouchListener.cancel()
             return true
         }
 

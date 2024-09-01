@@ -62,6 +62,7 @@ import android.os.RemoteCallback;
 import android.os.RemoteException;
 import android.os.Trace;
 import android.os.UserHandle;
+import android.os.VibrationExtInfo;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.MergedConfiguration;
@@ -365,6 +366,16 @@ class Session extends IWindowSession.Stub implements IBinder.DeathRecipient {
     @Override
     public void performHapticFeedbackAsync(int effectId, boolean always, boolean fromIme) {
         performHapticFeedback(effectId, always, fromIme);
+    }
+
+    @Override
+    public void performHapticFeedbackExt(VibrationExtInfo info) {
+        final long ident = Binder.clearCallingIdentity();
+        try {
+            mService.mPolicy.performHapticFeedbackExt(mUid, mPackageName, info);
+        } finally {
+            Binder.restoreCallingIdentity(ident);
+        }
     }
 
     /* Drag/drop */

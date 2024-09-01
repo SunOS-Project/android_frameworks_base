@@ -75,6 +75,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.sun.server.vibrator.CustomVibrationSettings;
+
 /** Controls all the system settings related to vibration. */
 final class VibrationSettings {
     private static final String TAG = "VibrationSettings";
@@ -423,7 +425,7 @@ final class VibrationSettings {
      * null otherwise.
      */
     @Nullable
-    public Vibration.Status shouldIgnoreVibration(@NonNull Vibration.CallerInfo callerInfo) {
+    public Vibration.Status shouldIgnoreVibration(@NonNull Vibration.CallerInfo callerInfo, boolean forceEnable) {
         final int usage = callerInfo.attrs.getUsage();
         synchronized (mLock) {
             if (!mUidObserver.isUidForeground(callerInfo.uid)
@@ -441,13 +443,15 @@ final class VibrationSettings {
                 return Vibration.Status.IGNORED_FROM_VIRTUAL_DEVICE;
             }
 
-            if (mBatterySaverMode && !BATTERY_SAVER_USAGE_ALLOWLIST.contains(usage)) {
+            if (mBatterySaverMode && !BATTERY_SAVER_USAGE_ALLOWLIST.contains(usage)
+                    && CustomVibrationSettings.getInstance().isLowPowerDisableVibration()) {
                 return Vibration.Status.IGNORED_FOR_POWER;
             }
 
             if (!callerInfo.attrs.isFlagSet(
                     VibrationAttributes.FLAG_BYPASS_USER_VIBRATION_INTENSITY_OFF)
-                    && !shouldVibrateForUserSetting(callerInfo)) {
+                    && !shouldVibrateForUserSetting(callerInfo)
+                    && !forceEnable) {
                 return Vibration.Status.IGNORED_FOR_SETTINGS;
             }
 
@@ -914,6 +918,7 @@ final class VibrationSettings {
             // Reload all settings including ones from AudioManager,
             // as they are based on UserHandle.USER_CURRENT.
             update();
+            CustomVibrationSettings.getInstance().onUserSwitched();
         }
     }
 }

@@ -16,6 +16,7 @@
 
 package com.android.systemui.shade;
 
+import android.os.VibrationExtInfo;
 import android.view.MotionEvent;
 
 import com.android.systemui.CoreStartable;
@@ -238,6 +239,7 @@ public interface ShadeController extends CoreStartable {
      * @param constant One of android.view.HapticFeedbackConstants
      */
     void performHapticFeedback(int constant);
+    void performHapticFeedbackExt(VibrationExtInfo vibrationExtInfo);
 
     /** Sets the listener for when the visibility of the shade changes. */
     default void setVisibilityListener(ShadeVisibilityListener listener) {}

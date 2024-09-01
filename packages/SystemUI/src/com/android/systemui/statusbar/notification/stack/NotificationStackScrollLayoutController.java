@@ -34,11 +34,16 @@ import static com.android.systemui.statusbar.notification.stack.NotificationStac
 import static com.android.systemui.statusbar.notification.stack.StackStateAnimator.ANIMATION_DURATION_STANDARD;
 import static com.android.systemui.util.kotlin.JavaAdapterKt.collectFlow;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_MISC_SCENES;
+
+import static vendor.sun.hardware.vibratorExt.Effect.BUTTON_CLICK;
+
 import android.animation.ObjectAnimator;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.os.Trace;
 import android.os.UserHandle;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
@@ -856,6 +861,11 @@ public class NotificationStackScrollLayoutController implements Dumpable {
                 .registerOnBypassStateChangedListener(mView::setKeyguardBypassEnabled);
         if (!FooterViewRefactor.isEnabled()) {
             mView.setManageButtonClickListener(v -> {
+                v.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                        .setEffectId(BUTTON_CLICK)
+                        .setVibrationAttributes(VIBRATION_ATTRIBUTES_MISC_SCENES)
+                        .build()
+                );
                 if (mNotificationActivityStarter != null) {
                     mNotificationActivityStarter.startHistoryIntent(v, mView.isHistoryShown());
                 }

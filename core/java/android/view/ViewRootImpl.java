@@ -203,6 +203,7 @@ import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.Trace;
 import android.os.UserHandle;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.sysprop.DisplayProperties;
 import android.sysprop.ViewProperties;
@@ -9622,6 +9623,14 @@ public final class ViewRootImpl implements ViewParent,
             }
         } catch (RemoteException e) {
             return false;
+        }
+    }
+
+    @Override
+    public void performHapticFeedbackExt(VibrationExtInfo info) {
+        try {
+            mWindowSession.performHapticFeedbackExt(info);
+        } catch (RemoteException e) {
         }
     }
 

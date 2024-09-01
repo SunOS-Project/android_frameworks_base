@@ -499,8 +499,7 @@ public class BatterySaverPolicy extends ContentObserver implements
                 rawPolicy.disableAod,
                 rawPolicy.disableLaunchBoost,
                 rawPolicy.disableOptionalSensors,
-                // Don't disable vibration when accessibility is on.
-                rawPolicy.disableVibration && !mAccessibilityEnabled.get(),
+                rawPolicy.disableVibration,
                 rawPolicy.enableAdjustBrightness,
                 rawPolicy.enableDataSaver,
                 rawPolicy.enableFirewall,

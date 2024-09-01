@@ -20,6 +20,7 @@ import android.media.AudioManager;
 import android.media.AudioSystem;
 import android.os.Handler;
 import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.util.SparseArray;
 
 import com.android.systemui.plugins.VolumeDialogController.Callbacks;
@@ -46,6 +47,7 @@ public interface VolumeDialogController {
 
     boolean hasVibrator();
     void vibrate(VibrationEffect effect);
+    void vibrateExt(VibrationExtInfo info);
     void scheduleTouchFeedback();
 
     AudioManager getAudioManager();

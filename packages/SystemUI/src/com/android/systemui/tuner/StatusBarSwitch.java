@@ -22,8 +22,6 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 
-import androidx.preference.SwitchPreference;
-
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.systemui.Dependency;
@@ -31,6 +29,8 @@ import com.android.systemui.statusbar.phone.ui.StatusBarIconController;
 import com.android.systemui.tuner.TunerService.Tunable;
 
 import java.util.Set;
+
+import org.sun.custom.preference.SwitchPreference;
 
 public class StatusBarSwitch extends SwitchPreference implements Tunable {
 

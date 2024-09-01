@@ -21,6 +21,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Point
 import android.os.Handler
+import android.os.VibrationExtInfo
 import android.util.Log
 import android.util.MathUtils
 import android.view.Gravity
@@ -49,6 +50,9 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sign
+import org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_BACK_GESTURE_DRAG
+import vendor.sun.hardware.vibratorExt.Effect.BACK_GESTURE
+import vendor.sun.hardware.vibratorExt.Effect.TICK
 
 private const val TAG = "BackPanelController"
 private const val ENABLE_FAILSAFE = true
@@ -1005,17 +1009,19 @@ internal constructor(
     }
 
     private fun performDeactivatedHapticFeedback() {
-        vibratorHelper.performHapticFeedback(
-            mView,
-            HapticFeedbackConstants.GESTURE_THRESHOLD_DEACTIVATE
-        )
+        vibratorHelper.performHapticFeedbackExt(mView, VibrationExtInfo.Builder().apply {
+            setEffectId(BACK_GESTURE)
+            setFallbackEffectId(TICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_BACK_GESTURE_DRAG)
+        }.build())
     }
 
     private fun performActivatedHapticFeedback() {
-        vibratorHelper.performHapticFeedback(
-            mView,
-            HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE
-        )
+        vibratorHelper.performHapticFeedbackExt(mView, VibrationExtInfo.Builder().apply {
+            setEffectId(BACK_GESTURE)
+            setFallbackEffectId(TICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_BACK_GESTURE_DRAG)
+        }.build())
     }
 
     private fun convertVelocityToAnimationFactor(

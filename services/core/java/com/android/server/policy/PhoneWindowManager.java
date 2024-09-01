@@ -168,6 +168,7 @@ import android.os.UEventObserver;
 import android.os.UserHandle;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.os.Vibrator;
 import android.provider.DeviceConfig;
 import android.provider.MediaStore;
@@ -6562,6 +6563,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         return true;
     }
 
+    @Override
+    public void performHapticFeedbackExt(int uid, String packageName, VibrationExtInfo info) {
+        mVibrator.vibrateExt(uid, packageName, info.getEffectId(), info.getFallbackEffectId(),
+                info.getAmplitude(), info.getReason(), info.getVibrationAttributes() != null ?
+                        info.getVibrationAttributes() : new VibrationAttributes.Builder().build());
+    }
 
     @Override
     public void keepScreenOnStartedLw() {

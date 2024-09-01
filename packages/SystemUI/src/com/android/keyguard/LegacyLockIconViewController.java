@@ -27,6 +27,11 @@ import static com.android.systemui.flags.Flags.DOZING_MIGRATION_1;
 import static com.android.systemui.flags.Flags.LOCKSCREEN_WALLPAPER_DREAM_ENABLED;
 import static com.android.systemui.util.kotlin.JavaAdapterKt.collectFlow;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK;
+
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.UNIFIED_SUCCESS;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -35,11 +40,10 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.biometrics.BiometricAuthenticator;
 import android.hardware.biometrics.BiometricSourceType;
-import android.os.VibrationAttributes;
+import android.os.VibrationExtInfo;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.MathUtils;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -103,8 +107,6 @@ public class LegacyLockIconViewController implements Dumpable, LockIconViewContr
     private static final float sDefaultDensity =
             (float) DisplayMetrics.DENSITY_DEVICE_STABLE / (float) DisplayMetrics.DENSITY_DEFAULT;
     private static final int sLockIconRadiusPx = (int) (sDefaultDensity * 36);
-    private static final VibrationAttributes TOUCH_VIBRATION_ATTRIBUTES =
-            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH);
 
     private static final long FADE_OUT_DURATION_MS = 250L;
 
@@ -645,10 +647,6 @@ public class LegacyLockIconViewController implements Dumpable, LockIconViewContr
         switch(event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_HOVER_ENTER:
-                if (!mDownDetected && mAccessibilityManager.isTouchExplorationEnabled()) {
-                    vibrateOnTouchExploration();
-                }
-
                 // The pointer that causes ACTION_DOWN is always at index 0.
                 // We need to persist its ID to track it during ACTION_MOVE that could include
                 // data for many other pointers because of multi-touch support.
@@ -790,15 +788,22 @@ public class LegacyLockIconViewController implements Dumpable, LockIconViewContr
 
     @VisibleForTesting
     void vibrateOnTouchExploration() {
-        mVibrator.performHapticFeedback(
-                mView,
-                HapticFeedbackConstants.CONTEXT_CLICK
+        mVibrator.performHapticFeedbackExt(mView, new VibrationExtInfo.Builder()
+                .setEffectId(UNIFIED_SUCCESS)
+                .setFallbackEffectId(CLICK)
+                .setVibrationAttributes(VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK)
+                .build()
         );
     }
 
     @VisibleForTesting
     void vibrateOnLongPress() {
-        mVibrator.performHapticFeedback(mView, UdfpsController.LONG_PRESS);
+        mVibrator.performHapticFeedbackExt(mView, new VibrationExtInfo.Builder()
+                .setEffectId(UNIFIED_SUCCESS)
+                .setFallbackEffectId(CLICK)
+                .setVibrationAttributes(VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK)
+                .build()
+        );
     }
 
     private final AuthController.Callback mAuthControllerCallback = new AuthController.Callback() {

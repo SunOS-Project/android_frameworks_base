@@ -16,6 +16,9 @@
 
 package com.android.server.vibrator;
 
+import static vendor.sun.hardware.vibratorExt.Effect.DURATION_DEFAULT;
+import static vendor.sun.hardware.vibratorExt.Effect.RAMP_DOWN;
+
 import android.annotation.Nullable;
 import android.hardware.vibrator.IVibrator;
 import android.os.Binder;
@@ -34,11 +37,16 @@ import com.android.internal.annotations.VisibleForTesting;
 
 import libcore.util.NativeAllocationRegistry;
 
+import org.sun.os.VibrationPatternManager;
+import org.sun.os.VibratorExtManager;
+
 /** Controls a single vibrator. */
 final class VibratorController {
     private static final String TAG = "VibratorController";
 
     private final Object mLock = new Object();
+
+    private final VibratorExtManager mVibratorExtManager = VibratorExtManager.getInstance();
 
     @GuardedBy("mLock")
     private final NativeWrapper mNativeWrapper;
@@ -242,6 +250,52 @@ final class VibratorController {
     }
 
     /**
+     * Plays predefined custom vibration effect, using {@code vibrationId} or completion callback to
+     * {@link OnVibrationCompleteListener}.
+     *
+     * <p>This will affect the state of {@link #isVibrating()}.
+     *
+     * @return The positive duration of the vibration started, if successful, zero if the vibrator
+     * do not support the input or a negative number if the operation failed.
+     */
+    public long on(int customEffectId, long vibrationId) {
+        synchronized (mLock) {
+            long millisecondsExt = mVibratorExtManager.vibratorOn(customEffectId, 0);
+            long duration = mNativeWrapper.on(millisecondsExt, vibrationId);
+            if (duration > 0) {
+                mCurrentAmplitude = -1;
+                notifyListenerOnVibrating(true);
+            }
+            return duration;
+        }
+    }
+    /**
+     * Plays predefined custom vibration effect with specific milliseconds,
+     * using {@code vibrationId} or completion callback to {@link OnVibrationCompleteListener}.
+     *
+     * <p>This will affect the state of {@link #isVibrating()}.
+     *
+     * @return The positive duration of the vibration started, if successful, zero if the vibrator
+     * do not support the input or a negative number if the operation failed.
+     */
+    public long on(int customEffectId, long milliseconds, long vibrationId) {
+        synchronized (mLock) {
+            long millisecondsExt;
+            if (VibrationPatternManager.isRampDownEffect(customEffectId, milliseconds)) {
+                millisecondsExt = mVibratorExtManager.vibratorOn(RAMP_DOWN, milliseconds);
+            } else {
+                millisecondsExt = mVibratorExtManager.vibratorOn(customEffectId, milliseconds);
+            }
+            long duration = mNativeWrapper.on(millisecondsExt, vibrationId);
+            if (duration > 0) {
+                mCurrentAmplitude = -1;
+                notifyListenerOnVibrating(true);
+            }
+            return duration;
+        }
+    }
+
+    /**
      * Turn on the vibrator for {@code milliseconds} time, using {@code vibrationId} for completion
      * callback to {@link OnVibrationCompleteListener}.
      *
@@ -252,6 +306,7 @@ final class VibratorController {
      */
     public long on(long milliseconds, long vibrationId) {
         synchronized (mLock) {
+            mVibratorExtManager.vibratorOn(DURATION_DEFAULT, milliseconds);
             long duration = mNativeWrapper.on(milliseconds, vibrationId);
             if (duration > 0) {
                 mCurrentAmplitude = -1;
@@ -272,8 +327,14 @@ final class VibratorController {
      */
     public long on(PrebakedSegment prebaked, long vibrationId) {
         synchronized (mLock) {
-            long duration = mNativeWrapper.perform(prebaked.getEffectId(),
-                    prebaked.getEffectStrength(), vibrationId);
+            long millisecondsExt = mVibratorExtManager.vibratorOn(prebaked.getEffectId(), 0);
+            long duration;
+            if (millisecondsExt != -1) {
+                duration = mNativeWrapper.on(millisecondsExt, vibrationId);
+            } else {
+                duration = mNativeWrapper.perform(prebaked.getEffectId(),
+                        prebaked.getEffectStrength(), vibrationId);
+            }
             if (duration > 0) {
                 mCurrentAmplitude = -1;
                 notifyListenerOnVibrating(true);
@@ -335,6 +396,7 @@ final class VibratorController {
      */
     public void off() {
         synchronized (mLock) {
+            mVibratorExtManager.vibratorOff();
             mNativeWrapper.off();
             mCurrentAmplitude = 0;
             notifyListenerOnVibrating(false);

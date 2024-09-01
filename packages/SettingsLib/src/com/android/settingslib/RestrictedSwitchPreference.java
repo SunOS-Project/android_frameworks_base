@@ -38,7 +38,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import androidx.preference.PreferenceManager;
 import androidx.preference.PreferenceViewHolder;
-import androidx.preference.SwitchPreferenceCompat;
+import org.sun.custom.preference.SwitchPreferenceCompat;
 
 import com.android.settingslib.utils.BuildCompatUtils;
 

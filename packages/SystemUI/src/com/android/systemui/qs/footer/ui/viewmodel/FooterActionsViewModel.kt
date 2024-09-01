@@ -17,6 +17,7 @@
 package com.android.systemui.qs.footer.ui.viewmodel
 
 import android.content.Context
+import android.os.VibrationExtInfo
 import android.util.Log
 import android.view.ContextThemeWrapper
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -36,6 +37,7 @@ import com.android.systemui.qs.footer.data.model.UserSwitcherStatusModel
 import com.android.systemui.qs.footer.domain.interactor.FooterActionsInteractor
 import com.android.systemui.qs.footer.domain.model.SecurityButtonConfig
 import com.android.systemui.res.R
+import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.util.icuMessageFormat
 import javax.inject.Inject
 import javax.inject.Named
@@ -48,6 +50,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_QS_TILE
+import vendor.sun.hardware.vibratorExt.Effect.BUTTON_CLICK
+import vendor.sun.hardware.vibratorExt.Effect.CLICK
 
 private const val TAG = "FooterActionsViewModel"
 
@@ -111,6 +116,7 @@ class FooterActionsViewModel(
         private val footerActionsInteractor: FooterActionsInteractor,
         private val globalActionsDialogLiteProvider: Provider<GlobalActionsDialogLite>,
         private val activityStarter: ActivityStarter,
+        private val vibratorHelper: VibratorHelper,
         @Named(PM_LITE_ENABLED) private val showPowerButton: Boolean,
     ) {
         /** Create a [FooterActionsViewModel] bound to the lifecycle of [lifecycleOwner]. */
@@ -137,6 +143,7 @@ class FooterActionsViewModel(
                 falsingManager,
                 globalActionsDialogLite,
                 activityStarter,
+                vibratorHelper,
                 showPowerButton,
             )
         }
@@ -149,6 +156,7 @@ fun FooterActionsViewModel(
     falsingManager: FalsingManager,
     globalActionsDialogLite: GlobalActionsDialogLite,
     activityStarter: ActivityStarter,
+    vibratorHelper: VibratorHelper,
     showPowerButton: Boolean,
 ): FooterActionsViewModel {
     suspend fun observeDeviceMonitoringDialogRequests(quickSettingsContext: Context) {
@@ -165,6 +173,11 @@ fun FooterActionsViewModel(
             return
         }
 
+        vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+            setEffectId(BUTTON_CLICK)
+            setFallbackEffectId(CLICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+        }.build())
         footerActionsInteractor.showDeviceMonitoringDialog(quickSettingsContext, expandable)
     }
 
@@ -173,6 +186,11 @@ fun FooterActionsViewModel(
             return
         }
 
+        vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+            setEffectId(BUTTON_CLICK)
+            setFallbackEffectId(CLICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+        }.build())
         activityStarter.dismissKeyguardThenExecute(
             {
                 footerActionsInteractor.showForegroundServicesDialog(expandable)
@@ -188,6 +206,11 @@ fun FooterActionsViewModel(
             return
         }
 
+        vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+            setEffectId(BUTTON_CLICK)
+            setFallbackEffectId(CLICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+        }.build())
         footerActionsInteractor.showUserSwitcher(expandable)
     }
 
@@ -196,6 +219,11 @@ fun FooterActionsViewModel(
             return
         }
 
+        vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+            setEffectId(BUTTON_CLICK)
+            setFallbackEffectId(CLICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+        }.build())
         footerActionsInteractor.showSettings(expandable)
     }
 
@@ -204,6 +232,11 @@ fun FooterActionsViewModel(
             return
         }
 
+        vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+            setEffectId(BUTTON_CLICK)
+            setFallbackEffectId(CLICK)
+            setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+        }.build())
         footerActionsInteractor.showPowerMenuDialog(globalActionsDialogLite, expandable)
     }
 

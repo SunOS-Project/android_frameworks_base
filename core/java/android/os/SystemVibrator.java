@@ -206,6 +206,17 @@ public class SystemVibrator extends Vibrator {
     }
 
     @Override
+    public void vibrateExt(int uid, String opPkg, int effectId,
+            int fallbackEffectId, float amplitude, String reason,
+            @NonNull VibrationAttributes attributes) {
+        if (mVibratorManager == null) {
+            Log.w(TAG, "Failed to vibrate; no vibrator manager.");
+            return;
+        }
+        mVibratorManager.vibrateExt(uid, opPkg, effectId, fallbackEffectId, amplitude, reason, attributes);
+    }
+
+    @Override
     public void performHapticFeedback(
             int constant, boolean always, String reason, boolean fromIme) {
         if (mVibratorManager == null) {

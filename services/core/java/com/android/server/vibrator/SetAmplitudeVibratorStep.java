@@ -26,6 +26,8 @@ import android.util.Slog;
 import java.util.Arrays;
 import java.util.List;
 
+import org.sun.os.VibratorExtManager;
+
 /**
  * Represents a step to turn the vibrator on and change its amplitude.
  *
@@ -38,6 +40,8 @@ final class SetAmplitudeVibratorStep extends AbstractVibratorStep {
      * prevent short patterns from turning the vibrator ON too frequently.
      */
     static final int REPEATING_EFFECT_ON_DURATION = 5000; // 5s
+
+    private final VibratorExtManager mVibratorExtManager = VibratorExtManager.getInstance();
 
     SetAmplitudeVibratorStep(VibrationStepConductor conductor, long startTime,
             VibratorController controller, VibrationEffect.Composed effect, int index,
@@ -112,6 +116,7 @@ final class SetAmplitudeVibratorStep extends AbstractVibratorStep {
                     stopVibrating();
                 }
             } else {
+                mVibratorExtManager.setAmplitude(amplitude);
                 if (startTime >= mPendingVibratorOffDeadline) {
                     // Vibrator is OFF. Turn vibrator back on for the duration of another
                     // cycle before setting the amplitude.
@@ -148,6 +153,7 @@ final class SetAmplitudeVibratorStep extends AbstractVibratorStep {
         float expectedAmplitude = controller.getCurrentAmplitude();
         long vibratorOnResult = startVibrating(onDuration);
         if (vibratorOnResult > 0) {
+            mVibratorExtManager.setAmplitude(expectedAmplitude);
             // Set the amplitude back to the value it was supposed to be playing at.
             changeAmplitude(expectedAmplitude);
         }
@@ -159,7 +165,13 @@ final class SetAmplitudeVibratorStep extends AbstractVibratorStep {
                     "Turning on vibrator " + controller.getVibratorInfo().getId() + " for "
                             + duration + "ms");
         }
-        long vibratorOnResult = controller.on(duration, getVibration().id);
+        long vibratorOnResult;
+        int customEffectId = getVibration().customEffectId;
+        if (customEffectId != -1) {
+            vibratorOnResult = controller.on(customEffectId, duration, getVibration().id);
+        } else {
+            vibratorOnResult = controller.on(duration, getVibration().id);
+        }
         handleVibratorOnResult(vibratorOnResult);
         getVibration().stats.reportVibratorOn(vibratorOnResult);
         return vibratorOnResult;

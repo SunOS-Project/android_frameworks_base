@@ -18,6 +18,7 @@ package com.android.systemui.keyguard.ui.binder
 
 import android.annotation.SuppressLint
 import android.graphics.PointF
+import android.os.VibrationExtInfo
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
@@ -30,6 +31,8 @@ import com.android.systemui.common.ui.view.rawDistanceFrom
 import com.android.systemui.keyguard.ui.viewmodel.KeyguardQuickAffordanceViewModel
 import com.android.systemui.plugins.FalsingManager
 import com.android.systemui.statusbar.VibratorHelper
+import vendor.sun.hardware.vibratorExt.Effect.LOCKSCREEN_SHORTCUT
+import vendor.sun.hardware.vibratorExt.Effect.HEAVY_CLICK
 
 class KeyguardQuickAffordanceOnTouchListener(
     private val view: View,
@@ -42,6 +45,8 @@ class KeyguardQuickAffordanceOnTouchListener(
     private val longPressDurationMs = ViewConfiguration.getLongPressTimeout().toLong()
     private var longPressAnimator: ViewPropertyAnimator? = null
     private val downDisplayCoords: PointF by lazy { PointF() }
+
+    var preActivatedTime = 0L
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouch(v: View, event: MotionEvent): Boolean {
@@ -96,6 +101,9 @@ class KeyguardQuickAffordanceOnTouchListener(
                         dispatchClick(viewModel.configKey)
                     }
                 } else {
+                    if (preActivatedTime != 0L && viewModel.configKey != null) {
+                        dispatchClick(viewModel.configKey)
+                    }
                     // When not using a stylus, lifting the finger/pointer will actually cancel
                     // the long-press gesture. Calling cancel after the quick affordance was
                     // already long-press activated is a no-op, so it's safe to call from here.
@@ -115,13 +123,12 @@ class KeyguardQuickAffordanceOnTouchListener(
         configKey: String,
     ) {
         view.setOnClickListener {
-            vibratorHelper?.vibrate(
-                if (viewModel.isActivated) {
-                    KeyguardBottomAreaVibrations.Activated
-                } else {
-                    KeyguardBottomAreaVibrations.Deactivated
-                }
-            )
+            if (System.currentTimeMillis() - preActivatedTime >= 100L) {
+                vibratorHelper?.vibrateExt(VibrationExtInfo.Builder().apply {
+                    setEffectId(LOCKSCREEN_SHORTCUT)
+                    setFallbackEffectId(HEAVY_CLICK)
+                }.build())
+            }
             viewModel.onClicked(
                 KeyguardQuickAffordanceViewModel.OnClickedParameters(
                     configKey = configKey,
@@ -137,6 +144,7 @@ class KeyguardQuickAffordanceOnTouchListener(
     fun cancel() {
         longPressAnimator?.cancel()
         longPressAnimator = null
+        preActivatedTime = 0L
         view.animate().scaleX(1f).scaleY(1f)
     }
 

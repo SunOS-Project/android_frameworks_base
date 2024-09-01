@@ -35,6 +35,9 @@ interface IVibratorManagerService {
             in CombinedVibration vibration, in VibrationAttributes attributes);
     void vibrate(int uid, int deviceId, String opPkg, in CombinedVibration vibration,
             in VibrationAttributes attributes, String reason, IBinder token);
+    void vibrateExt(int uid, int deviceId, String opPkg, int effectId,
+            int fallbackEffectId, float amplitude, String reason,
+            in VibrationAttributes attributes, IBinder token);
     void cancelVibrate(int usageFilter, IBinder token);
 
     // Async oneway APIs.

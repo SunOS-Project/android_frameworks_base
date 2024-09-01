@@ -245,6 +245,12 @@ BroadcastBehavior: android.telephony.euicc.EuiccManager#ACTION_NOTIFY_CARRIER_SE
     Field 'ACTION_NOTIFY_CARRIER_SETUP_INCOMPLETE' is missing @BroadcastBehavior
 
 
+CompileTimeConstant: android.os.VibrationExtInfo#CLICK:
+    All constants must be defined at compile time: android.os.VibrationExtInfo#CLICK
+CompileTimeConstant: android.os.VibrationExtInfo#SWITCH_TOGGLE:
+    All constants must be defined at compile time: android.os.VibrationExtInfo#SWITCH_TOGGLE
+
+
 DeprecationMismatch: android.accounts.AccountManager#newChooseAccountIntent(android.accounts.Account, java.util.ArrayList<android.accounts.Account>, String[], boolean, String, String, String[], android.os.Bundle):
     Method android.accounts.AccountManager.newChooseAccountIntent(android.accounts.Account, java.util.ArrayList<android.accounts.Account>, String[], boolean, String, String, String[], android.os.Bundle): @Deprecated annotation (present) and @deprecated doc tag (not present) do not match
 DeprecationMismatch: android.app.Activity#enterPictureInPictureMode():
@@ -393,6 +399,20 @@ KotlinOperator: android.graphics.Matrix44#get(int, int):
     Method can be invoked with an indexing operator from Kotlin: `get` (this is usually desirable; just make sure it makes sense for this type of object)
 KotlinOperator: android.graphics.Matrix44#set(int, int, float):
     Method can be invoked with an indexing operator from Kotlin: `set` (this is usually desirable; just make sure it makes sense for this type of object)
+
+
+MissingNullability: android.os.VibrationExtInfo#CREATOR:
+    Missing nullability on field `CREATOR` in class `class android.os.VibrationExtInfo`
+MissingNullability: android.os.VibrationExtInfo#writeToParcel(android.os.Parcel, int) parameter #0:
+    Missing nullability on parameter `dest` in method `writeToParcel`
+MissingNullability: android.os.VibrationExtInfo.Builder#setReason(String) parameter #0:
+    Missing nullability on parameter `reason` in method `setReason`
+MissingNullability: android.os.VibrationExtInfo.Builder#setVibrationAttributes(android.os.VibrationAttributes) parameter #0:
+    Missing nullability on parameter `attrs` in method `setVibrationAttributes`
+
+
+ParcelNotFinal: android.os.VibrationExtInfo:
+    Parcelable classes must be final: android.os.VibrationExtInfo is not final
 
 
 RequiresPermission: android.accounts.AccountManager#getAccountsByTypeAndFeatures(String, String[], android.accounts.AccountManagerCallback<android.accounts.Account[]>, android.os.Handler):
@@ -1087,6 +1107,10 @@ RequiresPermission: android.webkit.WebSettings#setGeolocationEnabled(boolean):
     Method 'setGeolocationEnabled' documentation mentions permissions without declaring @RequiresPermission
 
 
+StaticFinalBuilder: android.os.VibrationExtInfo.Builder:
+    Builder must be final: android.os.VibrationExtInfo.Builder
+
+
 Todo: android.hardware.camera2.params.StreamConfigurationMap:
     Documentation mentions 'TODO'
 Todo: android.provider.ContactsContract.RawContacts#newEntityIterator(android.database.Cursor):
@@ -1488,6 +1512,78 @@ UnflaggedApi: android.os.PerformanceHintManager.Session#setPreferPowerEfficiency
     New API must be flagged with @FlaggedApi: method android.os.PerformanceHintManager.Session.setPreferPowerEfficiency(boolean)
 UnflaggedApi: android.os.UserManager#DISALLOW_NEAR_FIELD_COMMUNICATION_RADIO:
     New API must be flagged with @FlaggedApi: field android.os.UserManager.DISALLOW_NEAR_FIELD_COMMUNICATION_RADIO
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CLASS_CUSTOM:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CLASS_CUSTOM
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_BACK_GESTURE_DRAG:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_BACK_GESTURE_DRAG
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_FACE_UNLOCK:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_FACE_UNLOCK
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_FINGERPRINT_UNLOCK:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_FINGERPRINT_UNLOCK
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_MISC_SCENES:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_MISC_SCENES
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_OFF_SCREEN_GESTURE:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_OFF_SCREEN_GESTURE
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_PREVIEW_ALARM_CALL:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_PREVIEW_ALARM_CALL
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_PREVIEW_NOTIFICATION:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_PREVIEW_NOTIFICATION
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_QS_TILE:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_QS_TILE
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_SLIDER:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_SLIDER
+UnflaggedApi: android.os.VibrationAttributes#USAGE_CUSTOM_SWITCH:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationAttributes.USAGE_CUSTOM_SWITCH
+UnflaggedApi: android.os.VibrationExtInfo:
+    New API must be flagged with @FlaggedApi: class android.os.VibrationExtInfo
+UnflaggedApi: android.os.VibrationExtInfo#CLICK:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationExtInfo.CLICK
+UnflaggedApi: android.os.VibrationExtInfo#CREATOR:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationExtInfo.CREATOR
+UnflaggedApi: android.os.VibrationExtInfo#SWITCH_TOGGLE:
+    New API must be flagged with @FlaggedApi: field android.os.VibrationExtInfo.SWITCH_TOGGLE
+UnflaggedApi: android.os.VibrationExtInfo#describeContents():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.describeContents()
+UnflaggedApi: android.os.VibrationExtInfo#getAmplitude():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.getAmplitude()
+UnflaggedApi: android.os.VibrationExtInfo#getEffectId():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.getEffectId()
+UnflaggedApi: android.os.VibrationExtInfo#getFallbackEffectId():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.getFallbackEffectId()
+UnflaggedApi: android.os.VibrationExtInfo#getReason():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.getReason()
+UnflaggedApi: android.os.VibrationExtInfo#getVibrationAttributes():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.getVibrationAttributes()
+UnflaggedApi: android.os.VibrationExtInfo#setAmplitude(float):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.setAmplitude(float)
+UnflaggedApi: android.os.VibrationExtInfo#setEffectId(int):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.setEffectId(int)
+UnflaggedApi: android.os.VibrationExtInfo#setFallbackEffectId(int):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.setFallbackEffectId(int)
+UnflaggedApi: android.os.VibrationExtInfo#setReason(String):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.setReason(String)
+UnflaggedApi: android.os.VibrationExtInfo#setVibrationAttributes(android.os.VibrationAttributes):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.setVibrationAttributes(android.os.VibrationAttributes)
+UnflaggedApi: android.os.VibrationExtInfo#writeToParcel(android.os.Parcel, int):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.writeToParcel(android.os.Parcel,int)
+UnflaggedApi: android.os.VibrationExtInfo.Builder:
+    New API must be flagged with @FlaggedApi: class android.os.VibrationExtInfo.Builder
+UnflaggedApi: android.os.VibrationExtInfo.Builder#Builder():
+    New API must be flagged with @FlaggedApi: constructor android.os.VibrationExtInfo.Builder()
+UnflaggedApi: android.os.VibrationExtInfo.Builder#Builder(android.os.VibrationExtInfo):
+    New API must be flagged with @FlaggedApi: constructor android.os.VibrationExtInfo.Builder(android.os.VibrationExtInfo)
+UnflaggedApi: android.os.VibrationExtInfo.Builder#build():
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.build()
+UnflaggedApi: android.os.VibrationExtInfo.Builder#setAmplitude(float):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.setAmplitude(float)
+UnflaggedApi: android.os.VibrationExtInfo.Builder#setEffectId(int):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.setEffectId(int)
+UnflaggedApi: android.os.VibrationExtInfo.Builder#setFallbackEffectId(int):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.setFallbackEffectId(int)
+UnflaggedApi: android.os.VibrationExtInfo.Builder#setReason(String):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.setReason(String)
+UnflaggedApi: android.os.VibrationExtInfo.Builder#setVibrationAttributes(android.os.VibrationAttributes):
+    New API must be flagged with @FlaggedApi: method android.os.VibrationExtInfo.Builder.setVibrationAttributes(android.os.VibrationAttributes)
 UnflaggedApi: android.provider.Settings#ACTION_CREDENTIAL_PROVIDER:
     New API must be flagged with @FlaggedApi: field android.provider.Settings.ACTION_CREDENTIAL_PROVIDER
 UnflaggedApi: android.telecom.Call.Details#getId():
@@ -1554,6 +1650,8 @@ UnflaggedApi: android.view.ScrollFeedbackProvider#onScrollProgress(int, int, int
     New API must be flagged with @FlaggedApi: method android.view.ScrollFeedbackProvider.onScrollProgress(int,int,int,int)
 UnflaggedApi: android.view.ScrollFeedbackProvider#onSnapToItem(int, int, int):
     New API must be flagged with @FlaggedApi: method android.view.ScrollFeedbackProvider.onSnapToItem(int,int,int)
+UnflaggedApi: android.view.View#performHapticFeedbackExt(android.os.VibrationExtInfo):
+    New API must be flagged with @FlaggedApi: method android.view.View.performHapticFeedbackExt(android.os.VibrationExtInfo)
 UnflaggedApi: android.view.accessibility.AccessibilityNodeInfo#ACTION_ARGUMENT_SCROLL_AMOUNT_FLOAT:
     New API must be flagged with @FlaggedApi: field android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_SCROLL_AMOUNT_FLOAT
 UnflaggedApi: android.view.accessibility.AccessibilityNodeInfo#isGranularScrollingSupported():

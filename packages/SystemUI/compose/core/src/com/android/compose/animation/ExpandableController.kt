@@ -156,6 +156,8 @@ internal class ExpandableControllerImpl(
 
                 return dialogController(cuj)
             }
+
+            override fun originalView() = composeViewRoot
         }
 
     /**

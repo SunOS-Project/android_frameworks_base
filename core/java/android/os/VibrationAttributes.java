@@ -39,6 +39,7 @@ public final class VibrationAttributes implements Parcelable {
             USAGE_CLASS_ALARM,
             USAGE_CLASS_FEEDBACK,
             USAGE_CLASS_MEDIA,
+            USAGE_CLASS_CUSTOM,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface UsageClass {}
@@ -55,6 +56,16 @@ public final class VibrationAttributes implements Parcelable {
             USAGE_PHYSICAL_EMULATION,
             USAGE_RINGTONE,
             USAGE_TOUCH,
+            USAGE_CUSTOM_BACK_GESTURE_DRAG,
+            USAGE_CUSTOM_FACE_UNLOCK,
+            USAGE_CUSTOM_FINGERPRINT_UNLOCK,
+            USAGE_CUSTOM_MISC_SCENES,
+            USAGE_CUSTOM_OFF_SCREEN_GESTURE,
+            USAGE_CUSTOM_PREVIEW_ALARM_CALL,
+            USAGE_CUSTOM_PREVIEW_NOTIFICATION,
+            USAGE_CUSTOM_QS_TILE,
+            USAGE_CUSTOM_SLIDER,
+            USAGE_CUSTOM_SWITCH,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Usage {}
@@ -83,6 +94,10 @@ public final class VibrationAttributes implements Parcelable {
      * soundtrack, game or animations.
      */
     public static final int USAGE_CLASS_MEDIA = 0x3;
+    /**
+     * Vibration usage class value to use for custom haptic feedback
+     */
+    public static final int USAGE_CLASS_CUSTOM = 0x4;
 
     /**
      * Mask for vibration usage class value.
@@ -140,6 +155,19 @@ public final class VibrationAttributes implements Parcelable {
      * or any interactive media that isn't for touch feedback specifically.
      */
     public static final int USAGE_MEDIA = 0x10 | USAGE_CLASS_MEDIA;
+    /**
+     * Custom vibration usage values
+     */
+    public static final int USAGE_CUSTOM_BACK_GESTURE_DRAG = 0x10 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_FACE_UNLOCK = 0x20 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_FINGERPRINT_UNLOCK = 0x30 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_MISC_SCENES = 0x40 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_OFF_SCREEN_GESTURE = 0x50 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_PREVIEW_ALARM_CALL = 0x60 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_PREVIEW_NOTIFICATION = 0x70 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_QS_TILE = 0x80 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_SLIDER = 0x90 | USAGE_CLASS_CUSTOM;
+    public static final int USAGE_CUSTOM_SWITCH = 0xa0 | USAGE_CLASS_CUSTOM;
 
     /** @hide */
     @IntDef(prefix = { "CATEGORY_" }, value = {
@@ -447,6 +475,26 @@ public final class VibrationAttributes implements Parcelable {
                 return "PHYSICAL_EMULATION";
             case USAGE_HARDWARE_FEEDBACK:
                 return "HARDWARE_FEEDBACK";
+            case USAGE_CUSTOM_BACK_GESTURE_DRAG:
+                return "BACK_GESTURE_DRAG";
+            case USAGE_CUSTOM_FACE_UNLOCK:
+                return "FACE_UNLOCK";
+            case USAGE_CUSTOM_FINGERPRINT_UNLOCK:
+                return "FINGERPRINT_UNLOCK";
+            case USAGE_CUSTOM_MISC_SCENES:
+                return "MISC_SCENES";
+            case USAGE_CUSTOM_OFF_SCREEN_GESTURE:
+                return "OFF_SCREEN_GESTURE";
+            case USAGE_CUSTOM_PREVIEW_ALARM_CALL:
+                return "PREVIEW_ALARM_CALL";
+            case USAGE_CUSTOM_PREVIEW_NOTIFICATION:
+                return "PREVIEW_NOTIFICATION";
+            case USAGE_CUSTOM_QS_TILE:
+                return "QS_TILE";
+            case USAGE_CUSTOM_SLIDER:
+                return "SLIDER";
+            case USAGE_CUSTOM_SWITCH:
+                return "SWITCH";
             default:
                 return "unknown usage " + usage;
         }

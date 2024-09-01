@@ -25,7 +25,6 @@ import androidx.preference.Preference;
 import androidx.preference.Preference.OnPreferenceChangeListener;
 import androidx.preference.PreferenceFragment;
 import androidx.preference.PreferenceScreen;
-import androidx.preference.SwitchPreference;
 
 import com.android.internal.logging.MetricsLogger;
 import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
@@ -34,6 +33,8 @@ import com.android.systemui.demomode.DemoModeAvailabilityTracker;
 import com.android.systemui.demomode.DemoModeController;
 import com.android.systemui.res.R;
 import com.android.systemui.util.settings.GlobalSettings;
+
+import org.sun.custom.preference.SwitchPreference;
 
 public class DemoModeFragment extends PreferenceFragment implements OnPreferenceChangeListener {
 

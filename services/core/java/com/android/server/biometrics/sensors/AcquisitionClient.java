@@ -16,6 +16,12 @@
 
 package com.android.server.biometrics.sensors;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FACE_UNLOCK;
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK;
+
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.UNIFIED_SUCCESS;
+
 import android.annotation.NonNull;
 import android.content.Context;
 import android.hardware.biometrics.BiometricConstants;
@@ -25,7 +31,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
-import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.os.Vibrator;
 import android.util.Slog;
 
@@ -41,14 +47,6 @@ import java.util.function.Supplier;
 public abstract class AcquisitionClient<T> extends HalClientMonitor<T> implements ErrorConsumer {
 
     private static final String TAG = "Biometrics/AcquisitionClient";
-
-    private static final VibrationAttributes HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES =
-            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_HARDWARE_FEEDBACK);
-
-    private static final VibrationEffect SUCCESS_VIBRATION_EFFECT =
-            VibrationEffect.get(VibrationEffect.EFFECT_CLICK);
-    private static final VibrationEffect ERROR_VIBRATION_EFFECT =
-            VibrationEffect.get(VibrationEffect.EFFECT_DOUBLE_CLICK);
 
     private final PowerManager mPowerManager;
     // If haptics should occur when auth result (success/reject) is known
@@ -193,12 +191,17 @@ public abstract class AcquisitionClient<T> extends HalClientMonitor<T> implement
 
     protected final void vibrateSuccess() {
         Vibrator vibrator = getContext().getSystemService(Vibrator.class);
+        boolean fromFaceUnlock = getClass().getSimpleName().toLowerCase().contains("face");
+        VibrationAttributes attrs = fromFaceUnlock ? VIBRATION_ATTRIBUTES_FACE_UNLOCK
+                : VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK;
         if (vibrator != null && mShouldVibrate) {
-            vibrator.vibrate(Process.myUid(),
-                    getContext().getOpPackageName(),
-                    SUCCESS_VIBRATION_EFFECT,
-                    getClass().getSimpleName() + "::success",
-                    HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
+            vibrator.vibrateExt(new VibrationExtInfo.Builder()
+                    .setEffectId(UNIFIED_SUCCESS)
+                    .setFallbackEffectId(CLICK)
+                    .setReason(getClass().getSimpleName() + "::success")
+                    .setVibrationAttributes(attrs)
+                    .build()
+            );
         }
     }
 

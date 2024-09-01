@@ -53,6 +53,11 @@ import static com.android.systemui.util.kotlin.JavaAdapterKt.collectFlow;
 
 import static java.lang.Float.isNaN;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_MISC_SCENES;
+
+import static vendor.sun.hardware.vibratorExt.Effect.EXPAND_PANEL;
+import static vendor.sun.hardware.vibratorExt.Effect.TICK;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -70,6 +75,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Trace;
 import android.os.UserManager;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.util.IndentingPrintWriter;
 import android.util.Log;
@@ -347,7 +353,6 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private final LockscreenShadeTransitionController mLockscreenShadeTransitionController;
     private final TapAgainViewController mTapAgainViewController;
     private final ShadeHeaderController mShadeHeaderController;
-    private final boolean mVibrateOnOpening;
     private final VelocityTracker mVelocityTracker = VelocityTracker.obtain();
     private final FlingAnimationUtils mFlingAnimationUtilsClosing;
     private final FlingAnimationUtils mFlingAnimationUtilsDismissing;
@@ -872,7 +877,6 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         mNotificationsDragEnabled = mResources.getBoolean(
                 R.bool.config_enableNotificationShadeDrag);
         mVibratorHelper = vibratorHelper;
-        mVibrateOnOpening = mResources.getBoolean(R.bool.config_vibrateOnIconAnimation);
         mStatusBarTouchableRegionManager = statusBarTouchableRegionManager;
         mSystemClock = systemClock;
         mKeyguardMediaController = keyguardMediaController;
@@ -3333,6 +3337,10 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         mVibratorHelper.performHapticFeedback(mView, constant);
     }
 
+    public void performHapticFeedbackExt(VibrationExtInfo info) {
+        mVibratorHelper.performHapticFeedbackExt(mView, info);
+    }
+
     private class ShadeHeadsUpTrackerImpl implements ShadeHeadsUpTracker {
         @Override
         public void addTrackingHeadsUpListener(Consumer<ExpandableNotificationRow> listener) {
@@ -3784,11 +3792,15 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
      *                         gesture), we always play haptic.
      */
     private void maybeVibrateOnOpening(boolean openingWithTouch) {
-        if (mVibrateOnOpening && mBarState != KEYGUARD && mBarState != SHADE_LOCKED) {
+        if (mBarState != KEYGUARD && mBarState != SHADE_LOCKED) {
             if (!openingWithTouch || !mHasVibratedOnOpen) {
-                mVibratorHelper.performHapticFeedback(
+                mVibratorHelper.performHapticFeedbackExt(
                         mView,
-                        HapticFeedbackConstants.GESTURE_START
+                        new VibrationExtInfo.Builder()
+                                .setEffectId(EXPAND_PANEL)
+                                .setFallbackEffectId(TICK)
+                                .setVibrationAttributes(VIBRATION_ATTRIBUTES_MISC_SCENES)
+                                .build()
                 );
                 mHasVibratedOnOpen = true;
                 mShadeLog.v("Vibrating on opening, mHasVibratedOnOpen=true");

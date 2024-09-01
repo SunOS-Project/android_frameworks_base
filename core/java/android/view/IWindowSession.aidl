@@ -23,6 +23,7 @@ import android.graphics.Rect;
 import android.graphics.Region;
 import android.os.Bundle;
 import android.os.RemoteCallback;
+import android.os.VibrationExtInfo;
 import android.util.MergedConfiguration;
 import android.view.DisplayCutout;
 import android.view.InputChannel;
@@ -169,6 +170,9 @@ interface IWindowSession {
      * permission.
      */
     oneway void performHapticFeedbackAsync(int effectId, boolean always, boolean fromIme);
+
+    @UnsupportedAppUsage
+    oneway void performHapticFeedbackExt(in VibrationExtInfo info);
 
     /**
      * Initiate the drag operation itself

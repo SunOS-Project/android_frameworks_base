@@ -22,8 +22,9 @@ import android.annotation.DrawableRes
 import android.annotation.SuppressLint
 import android.graphics.Point
 import android.graphics.Rect
+import android.os.VibrationAttributes
+import android.os.VibrationExtInfo
 import android.util.Log
-import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.View.OnLayoutChangeListener
 import android.view.View.VISIBLE
@@ -88,6 +89,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK
+import vendor.sun.hardware.vibratorExt.Effect.CLICK
+import vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK
+import vendor.sun.hardware.vibratorExt.Effect.UNIFIED_ERROR
+import vendor.sun.hardware.vibratorExt.Effect.UNIFIED_SUCCESS
 
 /** Bind occludingAppDeviceEntryMessageViewModel to run whenever the keyguard view is attached. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -327,20 +333,27 @@ object KeyguardRootViewBinder {
                     if (deviceEntryHapticsInteractor != null && vibratorHelper != null) {
                         launch {
                             deviceEntryHapticsInteractor.playSuccessHaptic.collect {
-                                vibratorHelper.performHapticFeedback(
+                                vibratorHelper.performHapticFeedbackExt(
                                     view,
-                                    HapticFeedbackConstants.CONFIRM,
-                                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING,
+                                    VibrationExtInfo.Builder().apply {
+                                        setEffectId(UNIFIED_SUCCESS)
+                                        setFallbackEffectId(CLICK)
+                                        setVibrationAttributes(VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK)
+                                    }.build()
                                 )
                             }
                         }
 
                         launch {
                             deviceEntryHapticsInteractor.playErrorHaptic.collect {
-                                vibratorHelper.performHapticFeedback(
+                                vibratorHelper.performHapticFeedbackExt(
                                     view,
-                                    HapticFeedbackConstants.REJECT,
-                                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING,
+                                    VibrationExtInfo.Builder().apply {
+                                        setEffectId(UNIFIED_ERROR)
+                                        setFallbackEffectId(DOUBLE_CLICK)
+                                        setVibrationAttributes(VibrationAttributes.createForUsage(
+                                                VibrationAttributes.USAGE_HARDWARE_FEEDBACK))
+                                    }.build()
                                 )
                             }
                         }

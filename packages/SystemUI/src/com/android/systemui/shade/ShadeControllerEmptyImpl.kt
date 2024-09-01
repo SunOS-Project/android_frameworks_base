@@ -16,6 +16,7 @@
 
 package com.android.systemui.shade
 
+import android.os.VibrationExtInfo
 import android.view.MotionEvent
 import com.android.systemui.dagger.SysUISingleton
 import javax.inject.Inject
@@ -64,4 +65,5 @@ open class ShadeControllerEmptyImpl @Inject constructor() : ShadeController {
     override fun onLaunchAnimationCancelled(isLaunchForActivity: Boolean) {}
     override fun onLaunchAnimationEnd(launchIsFullScreen: Boolean) {}
     override fun performHapticFeedback(constant: Int) {}
+    override fun performHapticFeedbackExt(info: VibrationExtInfo) {}
 }

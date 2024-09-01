@@ -16,12 +16,20 @@
 
 package com.android.systemui.statusbar;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK;
+
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.UNIFIED_ERROR;
+import static vendor.sun.hardware.vibratorExt.Effect.UNIFIED_SUCCESS;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.media.AudioAttributes;
 import android.os.Process;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.os.Vibrator;
 import android.view.View;
 
@@ -45,15 +53,10 @@ import javax.inject.Inject;
 public class VibratorHelper {
 
     private final Vibrator mVibrator;
+    private static final VibrationAttributes HARDWARE_FEEDBACK_ATTRIBUTES =
+            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_HARDWARE_FEEDBACK);
     public static final VibrationAttributes TOUCH_VIBRATION_ATTRIBUTES =
             VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH);
-
-    private static final VibrationEffect BIOMETRIC_SUCCESS_VIBRATION_EFFECT =
-            VibrationEffect.get(VibrationEffect.EFFECT_CLICK);
-    private static final VibrationEffect BIOMETRIC_ERROR_VIBRATION_EFFECT =
-            VibrationEffect.get(VibrationEffect.EFFECT_DOUBLE_CLICK);
-    private static final VibrationAttributes HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES =
-            VibrationAttributes.createForUsage(VibrationAttributes.USAGE_HARDWARE_FEEDBACK);
 
     private final Executor mExecutor;
 
@@ -128,6 +131,16 @@ public class VibratorHelper {
     }
 
     /**
+     * @see Vibrator#vibrateExt(VibrationExtInfo)
+     */
+    public void vibrateExt(@NonNull VibrationExtInfo info) {
+        if (!hasVibrator()) {
+            return;
+        }
+        mExecutor.execute(() -> mVibrator.vibrateExt(info));
+    }
+
+    /**
      * @see Vibrator#hasVibrator()
      */
     public boolean hasVibrator() {
@@ -148,19 +161,32 @@ public class VibratorHelper {
      * Perform vibration when biometric authentication success
      */
     public void vibrateAuthSuccess(String reason) {
-        vibrate(Process.myUid(),
-                "com.android.systemui",
-                BIOMETRIC_SUCCESS_VIBRATION_EFFECT, reason,
-                HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
+        final boolean fromFaceUnlock = reason.toLowerCase().contains("face");
+        if (fromFaceUnlock) {
+            return;
+        }
+        vibrateExt(new VibrationExtInfo.Builder()
+                .setEffectId(UNIFIED_SUCCESS)
+                .setFallbackEffectId(CLICK)
+                .setReason(reason)
+                .setVibrationAttributes(VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK)
+                .build());
     }
 
     /**
      * Perform vibration when biometric authentication error
      */
     public void vibrateAuthError(String reason) {
-        vibrate(Process.myUid(), "com.android.systemui",
-                BIOMETRIC_ERROR_VIBRATION_EFFECT, reason,
-                HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
+        final boolean fromFaceUnlock = reason.toLowerCase().contains("face");
+        if (fromFaceUnlock) {
+            return;
+        }
+        vibrateExt(new VibrationExtInfo.Builder()
+                .setEffectId(UNIFIED_ERROR)
+                .setFallbackEffectId(DOUBLE_CLICK)
+                .setReason(reason)
+                .setVibrationAttributes(HARDWARE_FEEDBACK_ATTRIBUTES)
+                .build());
     }
 
     /**
@@ -184,5 +210,13 @@ public class VibratorHelper {
      */
     public void performHapticFeedback(@NonNull View view, int feedbackConstant) {
         view.performHapticFeedback(feedbackConstant);
+    }
+
+    /**
+     * Perform a vibration using a view and the one-way API
+     * @see View#performHapticFeedbackExt(VibrationExtInfo info)
+     */
+    public void performHapticFeedbackExt(@NonNull View view, @NonNull VibrationExtInfo info) {
+        view.performHapticFeedbackExt(info);
     }
 }

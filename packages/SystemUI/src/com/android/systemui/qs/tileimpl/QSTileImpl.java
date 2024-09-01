@@ -29,6 +29,11 @@ import static com.android.internal.logging.nano.MetricsProto.MetricsEvent.FIELD_
 import static com.android.internal.logging.nano.MetricsProto.MetricsEvent.TYPE_ACTION;
 import static com.android.settingslib.RestrictedLockUtils.EnforcedAdmin;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_QS_TILE;
+
+import static vendor.sun.hardware.vibratorExt.Effect.BUTTON_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.CLICK;
+
 import android.annotation.CallSuper;
 import android.annotation.NonNull;
 import android.content.Context;
@@ -38,6 +43,8 @@ import android.metrics.LogMaker;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.VibrationExtInfo;
+import android.service.quicksettings.Tile;
 import android.text.format.DateUtils;
 import android.util.ArraySet;
 import android.util.Log;
@@ -177,6 +184,10 @@ public abstract class QSTileImpl<TState extends State> implements QSTile, Lifecy
 
     }
 
+    protected boolean vibrateOnClick() {
+        return mState != null && mState.state != Tile.STATE_UNAVAILABLE;
+    }
+
     protected QSTileImpl(
             QSHost host,
             QsEventLogger uiEventLogger,
@@ -295,6 +306,14 @@ public abstract class QSTileImpl<TState extends State> implements QSTile, Lifecy
                 eventId);
         if (!mFalsingManager.isFalseTap(FalsingManager.LOW_PENALTY)) {
             mHandler.obtainMessage(H.CLICK, eventId, 0, expandable).sendToTarget();
+        }
+        if (vibrateOnClick()) {
+            expandable.originalView().performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                    .setEffectId(BUTTON_CLICK)
+                    .setFallbackEffectId(CLICK)
+                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_QS_TILE)
+                    .build()
+            );
         }
     }
 

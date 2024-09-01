@@ -845,7 +845,7 @@ constructor(
             PromptAuthState(true, modality, needsUserConfirmation, dismissAfterDelay)
         _message.value = PromptMessage.Empty
 
-        if (!needsUserConfirmation) {
+        if (!needsUserConfirmation && modality != BiometricModality.Face) {
             vibrateOnSuccess()
         }
 
@@ -883,8 +883,6 @@ constructor(
 
         _isAuthenticated.value = authState.asExplicitlyConfirmed()
         _message.value = PromptMessage.Empty
-
-        vibrateOnSuccess()
 
         messageJob?.cancel()
         messageJob = null

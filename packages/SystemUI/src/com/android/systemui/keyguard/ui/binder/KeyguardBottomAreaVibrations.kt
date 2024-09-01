@@ -16,7 +16,6 @@
 
 package com.android.systemui.keyguard.ui.binder
 
-import android.os.VibrationEffect
 import kotlin.time.Duration.Companion.milliseconds
 
 object KeyguardBottomAreaVibrations {
@@ -25,51 +24,4 @@ object KeyguardBottomAreaVibrations {
     const val ShakeAnimationCycles = 5f
 
     private const val SmallVibrationScale = 0.3f
-    private const val BigVibrationScale = 0.6f
-
-    val Shake =
-        VibrationEffect.startComposition()
-            .apply {
-                val vibrationDelayMs =
-                    (ShakeAnimationDuration.inWholeMilliseconds / (ShakeAnimationCycles * 2))
-                    .toInt()
-
-                val vibrationCount = ShakeAnimationCycles.toInt() * 2
-                repeat(vibrationCount) {
-                    addPrimitive(
-                        VibrationEffect.Composition.PRIMITIVE_TICK,
-                        SmallVibrationScale,
-                        vibrationDelayMs,
-                    )
-                }
-            }
-            .compose()
-
-    val Activated =
-        VibrationEffect.startComposition()
-            .addPrimitive(
-                VibrationEffect.Composition.PRIMITIVE_TICK,
-                BigVibrationScale,
-                0,
-            )
-            .addPrimitive(
-                VibrationEffect.Composition.PRIMITIVE_QUICK_RISE,
-                0.1f,
-                0,
-            )
-            .compose()
-
-    val Deactivated =
-        VibrationEffect.startComposition()
-            .addPrimitive(
-                VibrationEffect.Composition.PRIMITIVE_TICK,
-                BigVibrationScale,
-                0,
-            )
-            .addPrimitive(
-                VibrationEffect.Composition.PRIMITIVE_QUICK_FALL,
-                0.1f,
-                0,
-            )
-            .compose()
 }

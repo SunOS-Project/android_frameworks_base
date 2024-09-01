@@ -38,6 +38,15 @@ import static com.android.systemui.Flags.hapticVolumeSlider;
 import static com.android.systemui.volume.Events.DISMISS_REASON_POSTURE_CHANGED;
 import static com.android.systemui.volume.Events.DISMISS_REASON_SETTINGS_CLICKED;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_SLIDER;
+
+import static vendor.sun.hardware.vibratorExt.Effect.ALERT_SLIDER_BOTTOM;
+import static vendor.sun.hardware.vibratorExt.Effect.ALERT_SLIDER_MIDDLE;
+import static vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.HEAVY_CLICK;
+import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_EDGE;
+import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_STEP;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ArgbEvaluator;
@@ -71,8 +80,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Trace;
-import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.text.InputFilter;
@@ -170,6 +180,9 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
     private static final int DRAWER_ANIMATION_DURATION_SHORT = 175;
     private static final int DRAWER_ANIMATION_DURATION = 250;
     private static final int DISPLAY_RANGE_MULTIPLIER = 100;
+
+    private static final long HAPTIC_LONG_PRESS_INTERVAL = 100L;
+    private static final long HAPTIC_MIN_INTERVAL = SystemProperties.getLong("sys.sun.haptic.slider_interval", 50L);
 
     /** Shows volume dialog show animation. */
     private static final String TYPE_SHOW = "show";
@@ -315,6 +328,9 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
     private final com.android.systemui.util.time.SystemClock mSystemClock;
     private final VolumePanelFlag mVolumePanelFlag;
     private final VolumeDialogInteractor mInteractor;
+
+    private long mLastHapticTimestamp;
+    private long mLastStreamVolumeChangeTimestamp;
 
     public VolumeDialogImpl(
             Context context,
@@ -1408,23 +1424,14 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
     }
 
     private void provideTouchFeedbackH(int newRingerMode) {
-        VibrationEffect effect = null;
-        switch (newRingerMode) {
-            case RINGER_MODE_NORMAL:
-                mController.scheduleTouchFeedback();
-                break;
-            case RINGER_MODE_SILENT:
-                effect = VibrationEffect.get(VibrationEffect.EFFECT_CLICK);
-                break;
-            case RINGER_MODE_VIBRATE:
-                // Feedback handled by onStateChange, for feedback both when user toggles
-                // directly in volume dialog, or drags slider to a value of 0 in settings.
-                break;
-            default:
-                effect = VibrationEffect.get(VibrationEffect.EFFECT_DOUBLE_CLICK);
+        if (newRingerMode == RINGER_MODE_NORMAL) {
+            mController.scheduleTouchFeedback();
         }
-        if (effect != null) {
-            mController.vibrate(effect);
+        if (newRingerMode != RINGER_MODE_SILENT) {
+            mController.vibrateExt(new VibrationExtInfo.Builder()
+                    .setEffectId(newRingerMode == RINGER_MODE_NORMAL ? ALERT_SLIDER_BOTTOM : ALERT_SLIDER_MIDDLE)
+                    .setFallbackEffectId(newRingerMode == RINGER_MODE_NORMAL ? HEAVY_CLICK : DOUBLE_CLICK)
+                    .build());
         }
     }
 
@@ -1857,12 +1864,6 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
 
     protected void onStateChangedH(State state) {
         if (D.BUG) Log.d(TAG, "onStateChangedH() state: " + state.toString());
-        if (mState != null && state != null
-                && mState.ringerModeInternal != -1
-                && mState.ringerModeInternal != state.ringerModeInternal
-                && state.ringerModeInternal == AudioManager.RINGER_MODE_VIBRATE) {
-            mController.vibrate(VibrationEffect.get(VibrationEffect.EFFECT_DOUBLE_CLICK));
-        }
         mState = state;
         mDynamic.clear();
         // add any new dynamic rows
@@ -2133,6 +2134,30 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                 row.animTargetProgress = newProgress;
                 row.anim.setDuration(UPDATE_ANIMATION_DURATION);
                 row.anim.start();
+
+                if (row.stream == mActiveStream) {
+                    final long now = SystemClock.uptimeMillis();
+                    if (now - mLastStreamVolumeChangeTimestamp < HAPTIC_LONG_PRESS_INTERVAL) {
+                        if (newProgress == row.slider.getMin() || newProgress == row.slider.getMax()) {
+                            mLastHapticTimestamp = now;
+                            row.slider.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                                    .setEffectId(SLIDER_EDGE)
+                                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                                    .build()
+                            );
+                        } else if (now - mLastHapticTimestamp > HAPTIC_MIN_INTERVAL) {
+                            mLastHapticTimestamp = now;
+                            row.slider.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                                    .setEffectId(SLIDER_STEP)
+                                    .setAmplitude((float) (newProgress - row.slider.getMin())
+                                            / (row.slider.getMax() - row.slider.getMin()))
+                                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                                    .build()
+                            );
+                        }
+                    }
+                    mLastStreamVolumeChangeTimestamp = now;
+                }
             } else {
                 // update slider directly to clamped value
                 if (row.anim != null) {
@@ -2567,6 +2592,25 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                     Events.writeEvent(Events.EVENT_TOUCH_LEVEL_CHANGED, mRow.stream,
                             userLevel);
                 }
+            }
+
+            final long now = SystemClock.uptimeMillis();
+            if (progress == mRow.slider.getMin() || progress == mRow.slider.getMax()) {
+                mLastHapticTimestamp = now;
+                mRow.slider.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                        .setEffectId(SLIDER_EDGE)
+                        .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                        .build()
+                );
+            } else if (now - mLastHapticTimestamp > HAPTIC_MIN_INTERVAL) {
+                mLastHapticTimestamp = now;
+                mRow.slider.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                        .setEffectId(SLIDER_STEP)
+                        .setAmplitude((float) (progress - mRow.slider.getMin())
+                                / (mRow.slider.getMax() - mRow.slider.getMin()))
+                        .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                        .build()
+                );
             }
         }
 

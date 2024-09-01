@@ -18,6 +18,7 @@
 package com.android.systemui.keyguard.ui.binder
 
 import android.graphics.Rect
+import android.os.VibrationExtInfo
 import android.view.View
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -39,6 +40,8 @@ import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import vendor.sun.hardware.vibratorExt.Effect.LOCKSCREEN_SHORTCUT
+import vendor.sun.hardware.vibratorExt.Effect.HEAVY_CLICK
 
 object KeyguardSettingsViewBinder {
     fun bind(
@@ -56,7 +59,10 @@ object KeyguardSettingsViewBinder {
                         viewModel.isVisible.distinctUntilChanged().collect { isVisible ->
                             view.animateVisibility(visible = isVisible)
                             if (isVisible) {
-                                vibratorHelper.vibrate(KeyguardBottomAreaVibrations.Activated)
+                                vibratorHelper.vibrateExt(VibrationExtInfo.Builder().apply {
+                                    setEffectId(LOCKSCREEN_SHORTCUT)
+                                    setFallbackEffectId(HEAVY_CLICK)
+                                }.build())
                                 view.setOnTouchListener(
                                     KeyguardSettingsButtonOnTouchListener(
                                         viewModel = viewModel,

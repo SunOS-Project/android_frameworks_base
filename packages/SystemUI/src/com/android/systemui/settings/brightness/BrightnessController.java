@@ -20,6 +20,11 @@ import static com.android.settingslib.display.BrightnessUtils.GAMMA_SPACE_MAX;
 import static com.android.settingslib.display.BrightnessUtils.convertGammaToLinearFloat;
 import static com.android.settingslib.display.BrightnessUtils.convertLinearToGammaFloat;
 
+import static org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_SLIDER;
+
+import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_EDGE;
+import static vendor.sun.hardware.vibratorExt.Effect.SLIDER_STEP;
+
 import android.animation.ValueAnimator;
 import android.annotation.NonNull;
 import android.content.Context;
@@ -34,8 +39,11 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.PowerManager;
 import android.os.RemoteException;
+import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.service.vr.IVrManager;
 import android.service.vr.IVrStateCallbacks;
@@ -71,6 +79,8 @@ public class BrightnessController implements ToggleSlider.Listener, MirroredBrig
     private static final int MSG_DETACH_LISTENER = 3;
     private static final int MSG_VR_MODE_CHANGED = 4;
 
+    private static final long HAPTIC_MIN_INTERVAL = SystemProperties.getLong("sys.sun.haptic.slider_interval", 50L);
+
     private static final Uri BRIGHTNESS_MODE_URI =
             Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE);
 
@@ -95,6 +105,9 @@ public class BrightnessController implements ToggleSlider.Listener, MirroredBrig
             mBackgroundHandler.post(mUpdateSliderRunnable);
         }
     };
+
+    private boolean mVibrateDisabled = true;
+    private long mLastHapticTimestamp;
 
     private volatile boolean mAutomatic;  // Brightness adjusted automatically using ambient light.
     private boolean mTrackingTouch = false; // Brightness adjusted via touch events.
@@ -359,6 +372,7 @@ public class BrightnessController implements ToggleSlider.Listener, MirroredBrig
 
         }
         setBrightness(valFloat);
+        doVibrate(value, tracking);
         if (!tracking) {
             AsyncTask.execute(new Runnable() {
                     public void run() {
@@ -398,6 +412,36 @@ public class BrightnessController implements ToggleSlider.Listener, MirroredBrig
 
     private void setBrightness(float brightness) {
         mDisplayManager.setTemporaryBrightness(mDisplayId, brightness);
+    }
+
+    private void doVibrate(int value, boolean tracking) {
+        if (!tracking) {
+            // User stops tracking slider, make next click on slider not vibrate
+            mVibrateDisabled = true;
+            return;
+        }
+        if (mVibrateDisabled) {
+            // First click on slider after started tracking, make next value change on slider vibrate
+            mVibrateDisabled = false;
+            return;
+        }
+        final long now = SystemClock.uptimeMillis();
+        if (value == 0 || value == GAMMA_SPACE_MAX) {
+            mLastHapticTimestamp = now;
+            mControl.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                    .setEffectId(SLIDER_EDGE)
+                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                    .build()
+            );
+        } else if (now - mLastHapticTimestamp > HAPTIC_MIN_INTERVAL) {
+            mLastHapticTimestamp = now;
+            mControl.performHapticFeedbackExt(new VibrationExtInfo.Builder()
+                    .setEffectId(SLIDER_STEP)
+                    .setAmplitude((float) value / GAMMA_SPACE_MAX)
+                    .setVibrationAttributes(VIBRATION_ATTRIBUTES_SLIDER)
+                    .build()
+            );
+        }
     }
 
     private void updateVrMode(boolean isEnabled) {

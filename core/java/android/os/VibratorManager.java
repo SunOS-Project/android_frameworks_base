@@ -137,6 +137,17 @@ public abstract class VibratorManager {
     public abstract void vibrate(int uid, String opPkg, @NonNull CombinedVibration effect,
             String reason, @Nullable VibrationAttributes attributes);
 
+    /** @hide */
+    public void vibrateExt(VibrationExtInfo info) {
+        vibrateExt(Process.myUid(), mPackageName, info.getEffectId(), info.getFallbackEffectId(),
+                info.getAmplitude(), info.getReason(), info.getVibrationAttributes() != null ?
+                        info.getVibrationAttributes() : new VibrationAttributes.Builder().build());
+    }
+
+    /** @hide */
+    public void vibrateExt(int uid, String opPkg, int effectId, int fallbackEffectId,
+            float amplitude, String reason, @NonNull VibrationAttributes attributes) {}
+
     /**
      * Performs a haptic feedback.
      *

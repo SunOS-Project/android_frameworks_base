@@ -24,6 +24,8 @@ import android.hardware.biometrics.BiometricConstants
 import android.hardware.biometrics.BiometricPrompt
 import android.hardware.biometrics.Flags
 import android.hardware.face.FaceManager
+import android.os.VibrationAttributes
+import android.os.VibrationExtInfo
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.view.HapticFeedbackConstants
@@ -62,6 +64,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.sun.os.CustomVibrationAttributes.VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK
+import vendor.sun.hardware.vibratorExt.Effect.CLICK
+import vendor.sun.hardware.vibratorExt.Effect.DOUBLE_CLICK
+import vendor.sun.hardware.vibratorExt.Effect.UNIFIED_ERROR
+import vendor.sun.hardware.vibratorExt.Effect.UNIFIED_SUCCESS
 
 private const val TAG = "BiometricViewBinder"
 private const val MAX_LOGO_DESCRIPTION_CHARACTER_NUMBER = 30
@@ -442,17 +449,42 @@ object BiometricViewBinder {
                 launch {
                     viewModel.hapticsToPlay.collect { haptics ->
                         if (haptics.hapticFeedbackConstant != HapticFeedbackConstants.NO_HAPTICS) {
-                            if (haptics.flag != null) {
-                                vibratorHelper.performHapticFeedback(
-                                    view,
-                                    haptics.hapticFeedbackConstant,
-                                    haptics.flag,
-                                )
-                            } else {
-                                vibratorHelper.performHapticFeedback(
-                                    view,
-                                    haptics.hapticFeedbackConstant,
-                                )
+                            when (haptics.hapticFeedbackConstant) {
+                                HapticFeedbackConstants.CONFIRM -> {
+                                    vibratorHelper.performHapticFeedbackExt(
+                                        view,
+                                        VibrationExtInfo.Builder().apply {
+                                            setEffectId(UNIFIED_SUCCESS)
+                                            setFallbackEffectId(CLICK)
+                                            setVibrationAttributes(VIBRATION_ATTRIBUTES_FINGERPRINT_UNLOCK)
+                                        }.build()
+                                    )
+                                }
+                                HapticFeedbackConstants.REJECT -> {
+                                    vibratorHelper.performHapticFeedbackExt(
+                                        view,
+                                        VibrationExtInfo.Builder().apply {
+                                            setEffectId(UNIFIED_ERROR)
+                                            setFallbackEffectId(DOUBLE_CLICK)
+                                            setVibrationAttributes(VibrationAttributes.createForUsage(
+                                                    VibrationAttributes.USAGE_HARDWARE_FEEDBACK))
+                                        }.build()
+                                    )
+                                }
+                                else -> {
+                                    if (haptics.flag != null) {
+                                        vibratorHelper.performHapticFeedback(
+                                            view,
+                                            haptics.hapticFeedbackConstant,
+                                            haptics.flag,
+                                        )
+                                    } else {
+                                        vibratorHelper.performHapticFeedback(
+                                            view,
+                                            haptics.hapticFeedbackConstant,
+                                        )
+                                    }
+                                }
                             }
                             viewModel.clearHaptics()
                         }

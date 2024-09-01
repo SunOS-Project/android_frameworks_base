@@ -41,6 +41,8 @@ public class MainSwitchPreference extends TwoStatePreference implements OnChecke
 
     private MainSwitchBar mMainSwitchBar;
 
+    private boolean mShouldVibrate;
+
     public MainSwitchPreference(Context context) {
         super(context);
         init(context, null);
@@ -73,6 +75,7 @@ public class MainSwitchPreference extends TwoStatePreference implements OnChecke
         // To support onPreferenceChange callback, it needs to call callChangeListener() when
         // MainSwitchBar is clicked.
         mMainSwitchBar.setOnClickListener((view) -> callChangeListener(isChecked()));
+        mMainSwitchBar.setShouldVibrate(mShouldVibrate);
         setIconSpaceReserved(isIconSpaceReserved());
         updateStatus(isChecked());
         registerListenerToSwitchBar();
@@ -93,6 +96,12 @@ public class MainSwitchPreference extends TwoStatePreference implements OnChecke
                     androidx.preference.R.styleable.Preference_android_iconSpaceReserved, true);
             setIconSpaceReserved(bIconSpaceReserved);
             a.recycle();
+
+            final TypedArray b = context.obtainStyledAttributes(attrs,
+                    R.styleable.customPreference, 0 /*defStyleAttr*/,
+                    0 /*defStyleRes*/);
+            mShouldVibrate = b.getBoolean(R.styleable.customPreference_vibrateOnClick, true);
+            b.recycle();
         }
     }
 

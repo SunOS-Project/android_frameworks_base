@@ -48,7 +48,9 @@ import android.os.HandlerExecutor;
 import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
+import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
+import android.os.VibrationExtInfo;
 import android.provider.Settings;
 import android.service.notification.Condition;
 import android.service.notification.ZenModeConfig;
@@ -108,6 +110,11 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
                     .build();
+    private static final VibrationAttributes HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES =
+            new VibrationAttributes.Builder(
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_HARDWARE_FEEDBACK))
+                            .setFlags(VibrationAttributes.FLAG_BYPASS_USER_VIBRATION_INTENSITY_OFF)
+                            .build();
 
     static final ArrayMap<Integer, Integer> STREAMS = new ArrayMap<>();
     static {
@@ -413,6 +420,11 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
 
     public void vibrate(VibrationEffect effect) {
         mVibrator.vibrate(effect, SONIFICIATION_VIBRATION_ATTRIBUTES);
+    }
+
+    public void vibrateExt(VibrationExtInfo info) {
+        info.setVibrationAttributes(HARDWARE_FEEDBACK_VIBRATION_ATTRIBUTES);
+        mVibrator.vibrateExt(info);
     }
 
     public boolean hasVibrator() {

@@ -66,6 +66,8 @@ interface Expandable {
      */
     fun dialogTransitionController(cuj: DialogCuj? = null): DialogTransitionAnimator.Controller?
 
+    fun originalView(): View
+
     companion object {
         /**
          * Create an [Expandable] that will animate [view] when expanded.
@@ -96,6 +98,8 @@ interface Expandable {
                 ): DialogTransitionAnimator.Controller? {
                     return DialogTransitionAnimator.Controller.fromView(view, cuj)
                 }
+
+                override fun originalView() = view
             }
         }
     }

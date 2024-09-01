@@ -18,6 +18,7 @@ package com.android.systemui.shade;
 
 import android.content.ComponentCallbacks2;
 import android.os.Looper;
+import android.os.VibrationExtInfo;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
@@ -271,6 +272,11 @@ public final class ShadeControllerImpl extends BaseShadeControllerImpl {
     @Override
     public void performHapticFeedback(int constant) {
         getNpvc().performHapticFeedback(constant);
+    }
+
+    @Override
+    public void performHapticFeedbackExt(VibrationExtInfo info) {
+        getNpvc().performHapticFeedbackExt(info);
     }
 
     @Override

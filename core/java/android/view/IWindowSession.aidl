@@ -174,6 +174,9 @@ interface IWindowSession {
     @UnsupportedAppUsage
     oneway void performHapticFeedbackExt(in VibrationExtInfo info);
 
+    @UnsupportedAppUsage
+    void getPopUpViewTouchOffset(IWindow window, out float[] offsets);
+
     /**
      * Initiate the drag operation itself
      *

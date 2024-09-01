@@ -59,6 +59,7 @@ class SurfaceFreezer {
     SurfaceControl mLeash;
     Snapshot mSnapshot = null;
     final Rect mFreezeBounds = new Rect();
+    final SurfaceFreezerExt mSurfaceFreezerExt;
 
     /**
      * @param animatable The object to animate.
@@ -66,6 +67,7 @@ class SurfaceFreezer {
     SurfaceFreezer(@NonNull Freezable animatable, @NonNull WindowManagerService service) {
         mAnimatable = animatable;
         mWmService = service;
+        mSurfaceFreezerExt = new SurfaceFreezerExt(this, animatable, service);
     }
 
     /**

@@ -355,6 +355,8 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
 
     protected TrustedOverlayHost mOverlayHost;
 
+    WindowContainerExt mWindowContainerExt;
+
     WindowContainer(WindowManagerService wms) {
         mWmService = wms;
         mTransitionController = mWmService.mAtmService.getTransitionController();
@@ -362,6 +364,7 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
         mSyncTransaction = wms.mTransactionFactory.get();
         mSurfaceAnimator = new SurfaceAnimator(this, this::onAnimationFinished, wms);
         mSurfaceFreezer = new SurfaceFreezer(this, wms);
+        mWindowContainerExt = new WindowContainerExt(this, mSurfaceFreezer);
     }
 
     /**
@@ -585,6 +588,7 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
         if (mOverlayHost != null) {
             mOverlayHost.dispatchConfigurationChanged(getConfiguration());
         }
+        mWindowContainerExt.onConfigurationChanged();
     }
 
     void reparent(WindowContainer newParent, int position) {
@@ -1105,6 +1109,10 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
 
     public final DisplayContent getDisplayContent() {
         return mDisplayContent;
+    }
+
+    TaskWindowSurfaceInfo getTaskWindowSurfaceInfo() {
+        return mWindowContainerExt.getTaskWindowSurfaceInfo();
     }
 
     /** Returns the first node of type {@link DisplayArea} above or at this node. */
@@ -1634,7 +1642,8 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
                     // the task can be updated to portrait first so the configuration can be
                     // computed in a consistent environment.
                     && (inMultiWindowMode()
-                        || !handlesOrientationChangeFromDescendant(orientation))) {
+                        || !handlesOrientationChangeFromDescendant(orientation))
+                    && !mWindowContainerExt.setOrientation(parent)) {
                 // Resolve the requested orientation.
                 onConfigurationChanged(parent.getConfiguration());
             }
@@ -3029,7 +3038,9 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
         // Calculate the relative position in parent container.
         final Rect parentBounds = getParent().getBounds();
         mTmpPoint.set(startBounds.left - parentBounds.left, startBounds.top - parentBounds.top);
-        mSurfaceFreezer.freeze(getSyncTransaction(), startBounds, mTmpPoint, freezeTarget);
+        if (!mWindowContainerExt.initializeChangeTransition(startBounds)) {
+            mSurfaceFreezer.freeze(getSyncTransaction(), startBounds, mTmpPoint, freezeTarget);
+        }
     }
 
     void initializeChangeTransition(Rect startBounds) {
@@ -3151,7 +3162,8 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
                 && isChangingAppTransition();
 
         // Delaying animation start isn't compatible with remote animations at all.
-        if (controller != null && !mSurfaceAnimator.isAnimationStartDelayed()) {
+        if (controller != null && !mSurfaceAnimator.isAnimationStartDelayed()
+                && !PopUpWindowController.getInstance().shouldSkipRemoteAnimation(isChanging)) {
             // Here we load App XML in order to read com.android.R.styleable#Animation_showBackdrop.
             boolean showBackdrop = false;
             // Optionally set backdrop color if App explicitly provides it through
@@ -3216,7 +3228,18 @@ class WindowContainer<E extends WindowContainer> extends ConfigurationContainer<
                     mSurfaceFreezer.mFreezeBounds, mTmpRect, displayInfo, durationScale,
                     true /* isAppAnimation */, true /* isThumbnail */), getSurfaceAnimationRunner())
                     : null;
-            resultAdapters = new Pair<>(adapter, thumbnailAdapter);
+            final Pair<AnimationAdapter, AnimationAdapter> adapterExt =
+                    mWindowContainerExt.getAnimationAdapter(displayInfo, durationScale);
+            if (adapterExt != null) {
+                resultAdapters = adapterExt;
+            } else {
+                final float cornerRadius = mWindowContainerExt.getTaskWindowSurfaceInfo().getCornerRadius();
+                adapter.setCornerRadius(cornerRadius);
+                if (thumbnailAdapter != null) {
+                    thumbnailAdapter.setCornerRadius(cornerRadius);
+                }
+                resultAdapters = new Pair<>(adapter, thumbnailAdapter);
+            }
             mTransit = transit;
             mTransitFlags = getDisplayContent().mAppTransition.getTransitFlags();
         } else {

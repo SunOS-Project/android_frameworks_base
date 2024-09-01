@@ -102,6 +102,7 @@ import android.app.ProfilerInfo;
 import android.app.ResultInfo;
 import android.app.TaskInfo;
 import android.app.WaitResult;
+import android.app.WindowConfiguration;
 import android.app.servertransaction.ActivityLifecycleItem;
 import android.app.servertransaction.LaunchActivityItem;
 import android.app.servertransaction.PauseActivityItem;
@@ -1763,7 +1764,7 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
             // Prevent recursion.
             return;
         }
-        final Transition transit = task.mTransitionController.requestCloseTransitionIfNeeded(task);
+        final Transition transit = task.mTransitionController.requestCloseTransitionIfNeeded(task, true);
         if (transit != null) {
             transit.collectClose(task);
             if (!task.mTransitionController.useFullReadyTracking()) {
@@ -2906,8 +2907,10 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                                 callingPid, callingUid) == PERMISSION_GRANTED)) {
                     mRecentTasks.setFreezeTaskListReordering();
                 }
-                if (activityOptions.getLaunchRootTask() != null) {
-                    // Don't move home activity forward if there is a launch root set.
+                if (activityOptions.getLaunchRootTask() != null ||
+                        WindowConfiguration.isPopUpWindowMode(activityOptions.getLaunchWindowingMode())) {
+                    // Don't move home activity forward if there is a launch root set
+                    // or we are launching into Pop-Up View.
                     moveHomeTaskForward = false;
                 }
             }
@@ -2925,6 +2928,10 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                     mWindowManager.executeAppTransition();
                     throw new IllegalArgumentException(
                             "startActivityFromRecents: Task " + taskId + " not found.");
+                }
+
+                if (PopUpWindowController.getInstance().startActivityFromRecents(task, activityOptions)) {
+                    return ActivityManager.START_TASK_TO_FRONT;
                 }
 
                 if (moveHomeTaskForward) {

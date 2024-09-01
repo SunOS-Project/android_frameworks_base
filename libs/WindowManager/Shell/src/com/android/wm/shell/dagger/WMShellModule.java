@@ -73,6 +73,7 @@ import com.android.wm.shell.freeform.FreeformTaskTransitionHandler;
 import com.android.wm.shell.freeform.FreeformTaskTransitionObserver;
 import com.android.wm.shell.keyguard.KeyguardTransitionHandler;
 import com.android.wm.shell.onehanded.OneHandedController;
+import com.android.wm.shell.popupview.PopUpViewTransitionHandler;
 import com.android.wm.shell.pip.PipTransitionController;
 import com.android.wm.shell.recents.RecentTasksController;
 import com.android.wm.shell.recents.RecentsTransitionHandler;
@@ -331,6 +332,19 @@ public abstract class WMShellModule {
         return OneHandedController.create(context, shellInit, shellCommandHandler, shellController,
                 windowManager, displayController, displayLayout, taskStackListener, jankMonitor,
                 uiEventLogger, mainExecutor, mainHandler);
+    }
+
+    //
+    // Pop-Up View
+    //
+
+    @WMSingleton
+    @Provides
+    @DynamicOverride
+    static PopUpViewTransitionHandler providePopUpViewTransitionHandler(Context context,
+            ShellInit shellInit,
+            Transitions transitions) {
+        return new PopUpViewTransitionHandler(context, shellInit, transitions);
     }
 
     //

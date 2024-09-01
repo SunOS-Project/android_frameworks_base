@@ -219,7 +219,9 @@ class InsetsPolicy {
             state = originalState;
         }
         state = adjustVisibilityForIme(target, state, state == originalState);
-        return adjustInsetsForRoundedCorners(target.mToken, state, state == originalState);
+        state = adjustInsetsForRoundedCorners(target.mToken, state, state == originalState);
+        state = PopUpWindowController.getInstance().adjustInsetsForWindow(target, state);
+        return state;
     }
 
     InsetsState adjustInsetsForWindow(WindowState target, InsetsState originalState) {
@@ -593,8 +595,8 @@ class InsetsPolicy {
         return (mForcedShowingTypes & types) == types;
     }
 
-    void updateSystemBars(WindowState win, boolean inSplitScreenMode, boolean inFreeformMode) {
-        mForcedShowingTypes = (inSplitScreenMode || inFreeformMode)
+    void updateSystemBars(WindowState win, boolean inSplitScreenMode, boolean inFreeformMode, boolean inPortPopUpView) {
+        mForcedShowingTypes = (inSplitScreenMode || inFreeformMode || inPortPopUpView)
                 ? (Type.statusBars() | Type.navigationBars())
                 : forceShowingNavigationBars(win)
                         ? Type.navigationBars()

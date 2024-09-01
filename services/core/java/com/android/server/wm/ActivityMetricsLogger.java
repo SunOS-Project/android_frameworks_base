@@ -16,7 +16,9 @@ import static android.app.WaitResult.LAUNCH_STATE_RELAUNCH;
 import static android.app.WaitResult.LAUNCH_STATE_WARM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MINI_WINDOW_EXT;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
+import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED_WINDOW_EXT;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 
 import static com.android.internal.logging.nano.MetricsProto.MetricsEvent.ACTION_ACTIVITY_START;
@@ -598,6 +600,9 @@ class ActivityMetricsLogger {
                 break;
             case WINDOWING_MODE_MULTI_WINDOW:
                 mWindowState = WINDOW_STATE_MULTI_WINDOW;
+                break;
+            case WINDOWING_MODE_MINI_WINDOW_EXT:
+            case WINDOWING_MODE_PINNED_WINDOW_EXT:
                 break;
             default:
                 if (windowingMode != WINDOWING_MODE_UNDEFINED) {

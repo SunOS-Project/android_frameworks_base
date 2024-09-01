@@ -167,6 +167,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.app.ActivityManagerInternal;
+import android.app.WindowConfiguration;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -852,6 +853,10 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
         ProtoLog.v(WM_DEBUG_FOCUS, "Looking for focus: %s, flags=%d, canReceive=%b, reason=%s",
                 w, w.mAttrs.flags, w.canReceiveKeys(),
                 w.canReceiveKeysReason(false /* fromUserTouch */));
+
+        if (w.getWindowConfiguration().isPinnedExtWindowMode()) {
+            return false;
+        }
 
         if (!w.canReceiveKeys()) {
             return false;
@@ -4002,11 +4007,16 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
                 newFocus, getDisplayId(), Debug.getCallers(4));
         final Task oldTask = mFocusedApp != null ? mFocusedApp.getTask() : null;
         final Task newTask = newFocus != null ? newFocus.getTask() : null;
+        TopActivityRecorder.getInstance().onAppFocusChanged(newFocus, newTask);
+        if (PopUpWindowController.getInstance().shouldSkipAppFocusChanged(newTask)) {
+            return false;
+        }
         mFocusedApp = newFocus;
         if (oldTask != newTask) {
             if (oldTask != null) oldTask.onAppFocusChanged(false);
             if (newTask != null) newTask.onAppFocusChanged(true);
         }
+        PopUpWindowController.getInstance().onAppFocusChanged(mFocusedApp, newTask);
 
         getInputMonitor().setFocusedAppLw(newFocus);
         return true;
@@ -5881,6 +5891,7 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
             if (!w.canReceiveTouchInput() || !w.isVisible()
                     || (w.getAttrs().flags & FLAG_NOT_TOUCHABLE) != 0
                     || unhandled.isEmpty()
+                    || w.getWindowConfiguration().isPinnedExtWindowMode()
                     || ignoreRecentsAnimationTarget) {
                 return;
             }
@@ -6191,7 +6202,8 @@ class DisplayContent extends RootDisplayArea implements WindowManagerPolicy.Disp
                 && (windowingMode == WINDOWING_MODE_FULLSCREEN
                 || windowingMode == WINDOWING_MODE_FREEFORM
                 || windowingMode == WINDOWING_MODE_PINNED
-                || windowingMode == WINDOWING_MODE_MULTI_WINDOW);
+                || windowingMode == WINDOWING_MODE_MULTI_WINDOW
+                || WindowConfiguration.isPopUpWindowMode(windowingMode));
     }
 
     @Nullable

@@ -21,7 +21,10 @@ import static com.android.server.wm.WindowManagerDebugConfig.TAG_WM;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 
+import static org.sun.os.DebugConstants.DEBUG_POP_UP;
+
 import android.annotation.Nullable;
+import android.app.WindowConfiguration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.util.Slog;
@@ -41,6 +44,7 @@ class TaskPositioningController {
     private DisplayContent mPositioningDisplay;
 
     private @Nullable TaskPositioner mTaskPositioner;
+    private @Nullable WindowPositioner mWindowPositioner;
 
     private final Rect mTmpClipRect = new Rect();
 
@@ -48,10 +52,20 @@ class TaskPositioningController {
         return mTaskPositioner != null;
     }
 
+    boolean isWindowPositioningLocked() {
+        return mWindowPositioner != null;
+    }
+
     final SurfaceControl.Transaction mTransaction;
 
     InputWindowHandle getDragWindowHandleLocked() {
-        return mTaskPositioner != null ? mTaskPositioner.mDragWindowHandle : null;
+        if (mTaskPositioner != null) {
+            return mTaskPositioner.mDragWindowHandle;
+        }
+        if (mWindowPositioner != null) {
+            return mWindowPositioner.mDragWindowHandle;
+        }
+        return null;
     }
 
     TaskPositioningController(WindowManagerService service) {
@@ -143,6 +157,9 @@ class TaskPositioningController {
                     // the resize handles.
                     return;
                 }
+                if (task.getWindowConfiguration().isPopUpWindowMode()) {
+                    return;
+                }
                 startPositioningLockedFuture =
                     startPositioningLocked(task.getTopVisibleAppMainWindow(), true /*resize*/,
                             task.preserveOrientationOnResize(), x, y);
@@ -188,6 +205,35 @@ class TaskPositioningController {
         }
         mPositioningDisplay = displayContent;
 
+        final int windowingMode = win.getTask() != null ? win.getTask().getWindowingMode()
+                : win.getWindowConfiguration().getWindowingMode();
+        if (WindowConfiguration.isPopUpWindowMode(windowingMode)) {
+            mWindowPositioner = WindowPositioner.create(mService);
+            return mWindowPositioner.register(displayContent, win).thenApply(unused -> {
+                // The global lock is held by the callers of startPositioningLocked but released before
+                // the async results are waited on. We must acquire the lock in this callback to ensure
+                // thread safety.
+                synchronized (mService.mGlobalLock) {
+                    // We need to grab the touch focus so that the touch events during the
+                    // resizing/scrolling are not sent to the app. 'win' is the main window
+                    // of the app, it may not have focus since there might be other windows
+                    // on top (eg. a dialog window).
+                    final WindowState transferFocusFromWin = mWindowPositioner.updateTransferFocus(windowingMode);
+                    if (!mService.mInputManager.transferTouchGesture(
+                            transferFocusFromWin.mInputChannel.getToken(),
+                            mWindowPositioner.mClientChannel.getToken())) {
+                        Slog.e(TAG_WM, "startPositioningLocked: Unable to transfer touch focus");
+                        cleanUpTaskPositioner();
+                        return false;
+                    }
+
+                    mWindowPositioner.startDrag(WindowConfiguration.isMiniExtWindowMode(windowingMode),
+                            startX, startY);
+                    return true;
+                }
+            });
+        }
+
         mTaskPositioner = TaskPositioner.create(mService);
         return mTaskPositioner.register(displayContent, win).thenApply(unused -> {
             // The global lock is held by the callers of startPositioningLocked but released before
@@ -217,8 +263,24 @@ class TaskPositioningController {
         });
     }
 
+    void cancelWindowPositionerInputEvent() {
+        mService.mAnimationHandler.post(() -> {
+            synchronized (mService.mGlobalLock) {
+                if (mWindowPositioner != null) {
+                    mWindowPositioner.cancelInputEvent();
+                    if (DEBUG_POP_UP) {
+                        Slog.d(TAG_WM, "cancelWindowPositionerInputEvent");
+                    }
+                }
+            }
+        });
+    }
+
     public void finishTaskPositioning(IWindow window) {
         if (mTaskPositioner != null && mTaskPositioner.mClientCallback == window.asBinder()) {
+            finishTaskPositioning();
+        }
+        if (mWindowPositioner != null && mWindowPositioner.mClientCallback == window.asBinder()) {
             finishTaskPositioning();
         }
     }
@@ -238,13 +300,18 @@ class TaskPositioningController {
 
     private void cleanUpTaskPositioner() {
         final TaskPositioner positioner = mTaskPositioner;
-        if (positioner == null) {
-            return;
+        final WindowPositioner winPositioner = mWindowPositioner;
+        if (positioner != null) {
+            // We need to assign task positioner to null first to indicate that we're finishing task
+            // positioning.
+            mTaskPositioner = null;
+            positioner.unregister();
         }
-
-        // We need to assign task positioner to null first to indicate that we're finishing task
-        // positioning.
-        mTaskPositioner = null;
-        positioner.unregister();
+        if (winPositioner != null) {
+            // We need to assign window positioner to null first to indicate that we're finishing task
+            // positioning.
+            mWindowPositioner = null;
+            winPositioner.unregister();
+        }
     }
 }

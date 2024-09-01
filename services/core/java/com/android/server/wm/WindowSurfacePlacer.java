@@ -96,6 +96,7 @@ class WindowSurfacePlacer {
             }
             performSurfacePlacement();
             mDeferredRequests = 0;
+            PopUpWindowController.getInstance().setTryExitWindowingMode(false);
         } else if (DEBUG) {
             Slog.i(TAG, "Cancel continueLayout " + Debug.getCallers(2, 3));
         }

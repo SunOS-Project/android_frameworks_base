@@ -380,6 +380,10 @@ public class RecentsAnimationController implements DeathRecipient {
         }
     };
 
+    IRecentsAnimationController getController() {
+        return mController;
+    }
+
     /**
      * @param remoteAnimationRunner The remote runner which should be notified when the animation is
      *                              ready to start or has been canceled

@@ -53,6 +53,8 @@ public class WindowChangeAnimationSpec implements AnimationSpec {
     private Animation mAnimation;
     private final boolean mIsThumbnail;
 
+    private float mCornerRadius = 0f;
+
     static final int ANIMATION_DURATION = AppTransition.DEFAULT_APP_TRANSITION_DURATION;
 
     public WindowChangeAnimationSpec(Rect startBounds, Rect endBounds, DisplayInfo displayInfo,
@@ -159,6 +161,9 @@ public class WindowChangeAnimationSpec implements AnimationSpec {
             mTmpRect.right = (int) (clipRect.right * tmp.mVecs[0] + 0.5f);
             mTmpRect.top = (int) (clipRect.top * tmp.mVecs[3] + 0.5f);
             mTmpRect.bottom = (int) (clipRect.bottom * tmp.mVecs[3] + 0.5f);
+            if (mCornerRadius != 0f) {
+                t.setCornerRadius(leash, mCornerRadius);
+            }
             t.setWindowCrop(leash, mTmpRect);
         }
     }
@@ -178,6 +183,11 @@ public class WindowChangeAnimationSpec implements AnimationSpec {
     @Override
     public boolean needsEarlyWakeup() {
         return mIsAppAnimation;
+    }
+
+    @Override
+    public void setCornerRadius(float radius) {
+        mCornerRadius = radius;
     }
 
     @Override

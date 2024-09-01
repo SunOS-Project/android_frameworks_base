@@ -1193,6 +1193,9 @@ public final class ViewRootImpl implements ViewParent,
     private final Rect mChildBoundingInsets = new Rect();
     private boolean mChildBoundingInsetsChanged = false;
 
+    /** @hide */
+    private final ViewRootImplExt mImplExt = new ViewRootImplExt(this);
+
     private String mTag = TAG;
     private String mFpsTraceName;
     private String mLargestViewTraceName;
@@ -2204,6 +2207,7 @@ public final class ViewRootImpl implements ViewParent,
                 mAppVisibilityChanged = true;
                 scheduleTraversals();
             }
+            mImplExt.handleAppVisibility(visible);
             // Only enable if the window is not already removed (via earlier call to doDie())
             if (!mRemoved || !mAppVisible) {
                 AnimationHandler.requestAnimatorsEnabled(mAppVisible, this);
@@ -6480,6 +6484,8 @@ public final class ViewRootImpl implements ViewParent,
             updateConfiguration(newDisplayId);
         }
         mForceNextConfigUpdate = false;
+
+        mImplExt.performConfigurationChange(overrideConfig);
     }
 
     /**
@@ -10355,6 +10361,9 @@ public final class ViewRootImpl implements ViewParent,
         @Override
         public void onInputEvent(InputEvent event) {
             Trace.traceBegin(Trace.TRACE_TAG_VIEW, "processInputEventForCompatibility");
+            if (event instanceof MotionEvent) {
+                mImplExt.onMotionEvent((MotionEvent) event);
+            }
             List<InputEvent> processedEvents;
             try {
                 processedEvents =

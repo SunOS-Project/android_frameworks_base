@@ -25,6 +25,7 @@ import static android.view.WindowManager.TRANSIT_FLAG_KEYGUARD_LOCKED;
 import static android.view.WindowManager.TRANSIT_PIP;
 import static android.view.WindowManager.TRANSIT_SLEEP;
 import static android.view.WindowManager.TRANSIT_TO_FRONT;
+import static android.window.TransitionInfo.FLAG_EXIT_POP_UP_VIEW_DISPLAY_ROTATION;
 import static android.window.TransitionInfo.FLAG_TRANSLUCENT;
 
 import static com.android.wm.shell.sysui.ShellSharedConstants.KEY_EXTRA_SHELL_CAN_HAND_OFF_ANIMATION;
@@ -286,6 +287,7 @@ public class RecentsTransitionHandler implements Transitions.TransitionHandler {
         private boolean mKeyguardLocked = false;
         private boolean mWillFinishToHome = false;
         private Transitions.TransitionHandler mTakeoverHandler = null;
+        private boolean mHasExitPopUpViewDisplayRotate = false;
 
         /** The animation is idle, waiting for the user to choose a task to switch to. */
         private static final int STATE_NORMAL = 0;
@@ -763,6 +765,9 @@ public class RecentsTransitionHandler implements Transitions.TransitionHandler {
                         closingTasks.add(change);
                     }
                 } else if (change.getMode() == TRANSIT_CHANGE) {
+                    if (change.hasFlags(FLAG_EXIT_POP_UP_VIEW_DISPLAY_ROTATION)) {
+                        mHasExitPopUpViewDisplayRotate = true;
+                    }
                     // Finish recents animation if the display is changed, so the default
                     // transition handler can play the animation such as rotation effect.
                     if (change.hasFlags(TransitionInfo.FLAG_IS_DISPLAY)
@@ -1041,6 +1046,7 @@ public class RecentsTransitionHandler implements Transitions.TransitionHandler {
             boolean returningToApp = !toHome
                     && !mWillFinishToHome
                     && mPausingTasks != null
+                    && !mHasExitPopUpViewDisplayRotate
                     && mState == STATE_NORMAL;
             if (returningToApp && allAppsAreTranslucent(mPausingTasks)) {
                 mHomeTransitionObserver.notifyHomeVisibilityChanged(true);

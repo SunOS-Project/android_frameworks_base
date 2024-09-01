@@ -24,8 +24,10 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_DREAM;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MINI_WINDOW_EXT;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED_WINDOW_EXT;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
@@ -1483,6 +1485,9 @@ class RecentTasks {
                     return false;
                 }
                 break;
+            case WINDOWING_MODE_PINNED_WINDOW_EXT:
+            case WINDOWING_MODE_MINI_WINDOW_EXT:
+                return false;
         }
 
         // If we're in lock task mode, ignore the root task
@@ -2050,6 +2055,7 @@ class RecentTasks {
         final boolean isCompatibleType = activityType == otherActivityType
                 || isUndefinedType || isOtherUndefinedType;
         final boolean isCompatibleMode = windowingMode == otherWindowingMode
+                || t2.getWindowConfiguration().isPopUpWindowMode()
                 || isUndefinedMode || isOtherUndefinedMode;
 
         return isCompatibleType && isCompatibleMode;

@@ -132,6 +132,8 @@ import static com.android.server.wm.Task.REPARENT_KEEP_ROOT_TASK_AT_FRONT;
 import static com.android.server.wm.WindowManagerService.MY_PID;
 import static com.android.server.wm.WindowManagerService.UPDATE_FOCUS_NORMAL;
 
+import static org.sun.os.DebugConstants.DEBUG_POP_UP;
+
 import android.Manifest;
 import android.annotation.IntDef;
 import android.annotation.NonNull;
@@ -929,8 +931,6 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
         final boolean supportsMultiDisplay = mContext.getPackageManager()
                 .hasSystemFeature(FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS);
         final boolean forceRtl = Settings.Global.getInt(resolver, DEVELOPMENT_FORCE_RTL, 0) != 0;
-        final boolean forceResizable = Settings.Global.getInt(
-                resolver, DEVELOPMENT_FORCE_RESIZABLE_ACTIVITIES, 0) != 0;
         final boolean devEnableNonResizableMultiWindow = Settings.Global.getInt(
                 resolver, DEVELOPMENT_ENABLE_NON_RESIZABLE_MULTI_WINDOW, 0) != 0;
         final int supportsNonResizableMultiWindow = mContext.getResources().getInteger(
@@ -956,7 +956,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
                 mGrammaticalManagerInternal.mergedFinalSystemGrammaticalGender());
 
         synchronized (mGlobalLock) {
-            mForceResizableActivities = forceResizable;
+            mForceResizableActivities = true;
             mDevEnableNonResizableMultiWindow = devEnableNonResizableMultiWindow;
             mSupportsNonResizableMultiWindow = supportsNonResizableMultiWindow;
             mRespectsActivityMinWidthHeightMultiWindow = respectsActivityMinWidthHeightMultiWindow;
@@ -966,7 +966,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
                     || supportsSplitScreenMultiWindow
                     || supportsPictureInPicture
                     || supportsMultiDisplay;
-            if ((supportsMultiWindow || forceResizable) && multiWindowFormEnabled) {
+            if (multiWindowFormEnabled) {
                 mSupportsMultiWindow = true;
                 mSupportsFreeformWindowManagement = freeformWindowManagement;
                 mSupportsSplitScreenMultiWindow = supportsSplitScreenMultiWindow;
@@ -2623,6 +2623,8 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
             return;
         }
 
+        PopUpWindowController.getInstance().startLockTaskMode(task);
+
         final Task rootTask = mRootWindowContainer.getTopDisplayFocusedRootTask();
         if (rootTask == null || task != rootTask.getTopMostTask()) {
             throw new IllegalArgumentException("Invalid task, not in foreground");
@@ -3736,6 +3738,13 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
         // If the activity is already in picture in picture mode, then just return early
         if (r.inPinnedWindowingMode()) {
             return true;
+        }
+
+        if (r.isPopUpView()) {
+            if (DEBUG_POP_UP) {
+                Slog.d(TAG, "task is during moving to back, skip enterPictureInPictureMode.");
+            }
+            return false;
         }
 
         // Activity supports picture-in-picture, now check that we can enter PiP at this
@@ -6676,6 +6685,7 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
         public boolean onForceStopPackage(String packageName, boolean doit, boolean evenPersistent,
                 int userId) {
             synchronized (mGlobalLock) {
+                TopActivityRecorder.getInstance().onForceStopPackage(packageName);
                 // In case if setWindowManager hasn't been called yet when booting.
                 if (mRootWindowContainer == null) return false;
                 return mRootWindowContainer.finishDisabledPackageActivities(packageName,

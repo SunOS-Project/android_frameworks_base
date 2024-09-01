@@ -17,6 +17,7 @@
 package com.android.systemui.statusbar.phone;
 
 import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MINI_WINDOW_EXT;
 import static android.service.notification.NotificationListenerService.REASON_CLICK;
 
 import static com.android.systemui.statusbar.phone.CentralSurfaces.getActivityOptions;
@@ -90,6 +91,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.statusbar.phone.PopUpViewController;
+
 /**
  * Status bar implementation of {@link NotificationActivityStarter}.
  */
@@ -118,6 +121,7 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
 
     private final NotificationVisibilityProvider mVisibilityProvider;
     private final HeadsUpManager mHeadsUpManager;
+    private final PopUpViewController mPopUpViewController;
     private final ActivityStarter mActivityStarter;
     private final CommandQueue mCommandQueue;
     private final NotificationClickNotifier mClickNotifier;
@@ -157,6 +161,7 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
             @Background Executor uiBgExecutor,
             NotificationVisibilityProvider visibilityProvider,
             HeadsUpManager headsUpManager,
+            PopUpViewController popUpViewController,
             ActivityStarter activityStarter,
             CommandQueue commandQueue,
             NotificationClickNotifier clickNotifier,
@@ -190,6 +195,7 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
         mUiBgExecutor = uiBgExecutor;
         mVisibilityProvider = visibilityProvider;
         mHeadsUpManager = headsUpManager;
+        mPopUpViewController = popUpViewController;
         mActivityStarter = activityStarter;
         mCommandQueue = commandQueue;
         mClickNotifier = clickNotifier;
@@ -510,10 +516,17 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
                                 mKeyguardStateController.isShowing(),
                                 eventTime)
                                 : getActivityOptions(mDisplayId, adapter);
+                        boolean useMiniWindow = !mKeyguardStateController.isShowing() &&
+                                mPopUpViewController.shouldJumpNotificationWithPopUp();
+                        if (useMiniWindow) {
+                            ActivityOptions newOptions = ActivityOptions.fromBundle(options);
+                            newOptions.setLaunchWindowingMode(WINDOWING_MODE_MINI_WINDOW_EXT);
+                            options = newOptions.toBundle();
+                        }
                         int result = intent.sendAndReturnResult(mContext, 0, fillInIntent, null,
                                 null, null, options);
                         mLogger.logSendPendingIntent(entry, intent, result);
-                        return result;
+                        return useMiniWindow ? ActivityManager.START_DELIVERED_TO_TOP : result;
                     });
         } catch (PendingIntent.CanceledException e) {
             // the stack trace isn't very helpful here.

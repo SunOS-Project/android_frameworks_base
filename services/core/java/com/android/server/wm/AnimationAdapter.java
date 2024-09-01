@@ -125,4 +125,6 @@ public interface AnimationAdapter {
     default boolean shouldDeferAnimationFinish(Runnable endDeferFinishCallback) {
         return false;
     }
+
+    default void setCornerRadius(float radius) {}
 }

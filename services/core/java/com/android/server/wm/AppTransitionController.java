@@ -74,6 +74,8 @@ import static com.android.server.wm.WindowContainer.AnimationFlags.PARENTS;
 import static com.android.server.wm.WindowManagerDebugConfig.TAG_WITH_CLASS_NAME;
 import static com.android.server.wm.WindowManagerDebugConfig.TAG_WM;
 
+import static org.sun.os.DebugConstants.DEBUG_POP_UP;
+
 import android.annotation.IntDef;
 import android.annotation.Nullable;
 import android.graphics.Rect;
@@ -81,6 +83,7 @@ import android.os.Trace;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Pair;
+import android.util.Slog;
 import android.view.Display;
 import android.view.RemoteAnimationAdapter;
 import android.view.RemoteAnimationDefinition;
@@ -911,6 +914,13 @@ public class AppTransitionController {
         final int wcsCount = wcs.size();
         for (int i = 0; i < wcsCount; i++) {
             final WindowContainer wc = wcs.valueAt(i);
+            if (AppTransition.isKeyguardGoingAwayTransitOld(transit) &&
+                    wc.getWindowConfiguration().isPopUpWindowMode()) {
+                if (DEBUG_POP_UP) {
+                    Slog.d(TAG, "skip KeyguardGoingAwayTransit for " + wc);
+                }
+                continue;
+            }
             // If app transition animation target is promoted to higher level, SurfaceAnimator
             // triggers WC#onAnimationFinished only on the promoted target. So we need to take care
             // of triggering AR#onAnimationFinished on each ActivityRecord which is a part of the

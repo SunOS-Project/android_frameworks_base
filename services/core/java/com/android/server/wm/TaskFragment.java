@@ -73,6 +73,8 @@ import static com.android.server.wm.TaskFragmentProto.MIN_WIDTH;
 import static com.android.server.wm.TaskFragmentProto.WINDOW_CONTAINER;
 import static com.android.server.wm.WindowContainerChildProto.TASK_FRAGMENT;
 
+import static org.sun.os.DebugConstants.DEBUG_POP_UP;
+
 import android.annotation.IntDef;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -1153,7 +1155,7 @@ class TaskFragment extends WindowContainer<WindowContainer> {
     ActivityRecord topRunningActivity(boolean focusableOnly) {
         // Split into 2 to avoid object creation due to variable capture.
         if (focusableOnly) {
-            return getActivity((r) -> r.canBeTopRunning() && r.isFocusable());
+            return getActivity((r) -> r.canBeTopRunning() && r.isFocusableOrPopUpView());
         }
         return getActivity(ActivityRecord::canBeTopRunning);
     }
@@ -1190,6 +1192,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
         final ActivityRecord r = topRunningActivity();
         return r != null ? r.isFocusable()
                 : (isFocusable() && getWindowConfiguration().canReceiveKeys());
+    }
+
+    boolean isTopActivityFocusableOrPinWindow() {
+        final ActivityRecord r = topRunningActivity();
+        return r != null ? r.isFocusableOrPopUpView()
+                : getWindowConfiguration().isPinnedExtWindowMode() ||
+                        (isFocusable() && getWindowConfiguration().canReceiveKeys());
     }
 
     /**
@@ -1270,7 +1279,7 @@ class TaskFragment extends WindowContainer<WindowContainer> {
             }
 
             final int otherWindowingMode = other.getWindowingMode();
-            if (otherWindowingMode == WINDOWING_MODE_FULLSCREEN
+            if (isFullScreenWindowMode(otherWindowingMode)
                     || (otherWindowingMode != WINDOWING_MODE_PINNED && other.matchParentBounds())) {
                 if (isTranslucent(other, starting)) {
                     // Can be visible behind a translucent TaskFragment.
@@ -1329,6 +1338,17 @@ class TaskFragment extends WindowContainer<WindowContainer> {
     private boolean isTopActivityLaunchedBehind() {
         final ActivityRecord top = topRunningActivity();
         return top != null && top.mLaunchTaskBehind;
+    }
+
+    private boolean isFullScreenWindowMode(int otherWindowingMode) {
+        if (otherWindowingMode == WINDOWING_MODE_FULLSCREEN) {
+            return true;
+        }
+        if (WindowConfiguration.isPopUpWindowMode(otherWindowingMode) &&
+                getWindowingMode() == otherWindowingMode) {
+            return true;
+        }
+        return false;
     }
 
     final void updateActivityVisibilities(@Nullable ActivityRecord starting,
@@ -1752,12 +1772,16 @@ class TaskFragment extends WindowContainer<WindowContainer> {
      */
     boolean canBeResumed(@Nullable ActivityRecord starting) {
         // No need to resume activity in TaskFragment that is not visible.
-        return isTopActivityFocusable()
+        return isTopActivityFocusableOrPinWindow()
                 && getVisibility(starting) == TASK_FRAGMENT_VISIBILITY_VISIBLE;
     }
 
     boolean isFocusableAndVisible() {
         return isTopActivityFocusable() && shouldBeVisible(null /* starting */);
+    }
+
+    boolean isFocusableAndVisibleOrPinWindow() {
+        return isTopActivityFocusableOrPinWindow() && shouldBeVisible(null /* starting */);
     }
 
     final boolean startPausing(boolean uiSleeping, ActivityRecord resuming, String reason) {
@@ -1845,7 +1869,8 @@ class TaskFragment extends WindowContainer<WindowContainer> {
             // since we want to give Pip activities a chance to enter Pip before resuming the
             // next activity.
             final boolean lastResumedCanPip = prev.checkEnterPictureInPictureState(
-                    "shouldAutoPipWhilePausing", userLeaving);
+                    "shouldAutoPipWhilePausing", userLeaving) &&
+                    !"PopUpWindowController.moveActivityTaskToBackInner".equals(reason);
 
             if (ActivityTaskManagerService.isPip2ExperimentEnabled()) {
                 // If a new task is being launched, then mark the existing top activity as
@@ -2271,6 +2296,13 @@ class TaskFragment extends WindowContainer<WindowContainer> {
         }
         if (!task.isResizeable() && !tda.supportsNonResizableMultiWindow()) {
             // Not support non-resizable in multi window.
+            return false;
+        }
+        if (getTask().getWindowConfiguration().isPopUpWindowMode() &&
+                !ActivityInfo.isResizeableMode(getTask().mResizeMode)) {
+            if (DEBUG_POP_UP) {
+                Slog.d(TAG, "Not support pop-up view in multi window.");
+            }
             return false;
         }
 

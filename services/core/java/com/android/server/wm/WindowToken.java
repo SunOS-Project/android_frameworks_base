@@ -372,6 +372,9 @@ class WindowToken extends WindowContainer<WindowState> {
 
     @Override
     void assignLayer(SurfaceControl.Transaction t, int layer) {
+        if (PopUpWindowController.getInstance().onWindowTokenAssignLayer(this, t, layer)) {
+            return;
+        }
         if (mRoundedCornerOverlay) {
             super.assignLayer(t, WindowManagerPolicy.COLOR_FADE_LAYER + 1);
         } else {

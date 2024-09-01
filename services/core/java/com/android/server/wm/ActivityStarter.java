@@ -28,6 +28,7 @@ import static android.app.ActivityManager.START_RETURN_LOCK_TASK_MODE_VIOLATION;
 import static android.app.ActivityManager.START_SUCCESS;
 import static android.app.ActivityManager.START_TASK_TO_FRONT;
 import static android.app.ActivityTaskManager.INVALID_TASK_ID;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
@@ -717,6 +718,8 @@ class ActivityStarter {
      */
     int execute() {
         try {
+            PopUpWindowController.getInstance().computeBeforeExecuteRequest(mRequest);
+
             onExecutionStarted();
 
             if (mRequest.intent != null) {
@@ -1360,6 +1363,8 @@ class ActivityStarter {
             mService.resumeAppSwitches();
         }
 
+        mService.mWindowManager.mTaskPositioningController.cancelWindowPositionerInputEvent();
+
         mLastStartActivityResult = startActivityUnchecked(r, sourceRecord, voiceSession,
                 request.voiceInteractor, startFlags, checkedOptions,
                 inTask, inTaskFragment, balVerdict, intentGrants, realCallingUid);
@@ -1523,7 +1528,12 @@ class ActivityStarter {
         // transition based on a sub-action.
         // Only do the create here (and defer requestStart) since startActivityInner might abort.
         final TransitionController transitionController = r.mTransitionController;
+        final boolean isStartingPopUpView = options != null &&
+                WindowConfiguration.isPopUpWindowMode(options.getLaunchWindowingMode()) &&
+                (sourceRecord == null || !r.packageName.equals(sourceRecord.packageName) ||
+                        sourceRecord.getChildCount() == 0);
         Transition newTransition = transitionController.isShellTransitionsEnabled()
+                && !isStartingPopUpView
                 ? transitionController.createAndStartCollecting(TRANSIT_OPEN) : null;
         RemoteTransition remoteTransition = r.takeRemoteTransition();
         // Create a display snapshot as soon as possible.
@@ -1889,7 +1899,7 @@ class ActivityStarter {
                 mOptions, sourceRecord);
         if (mDoResume) {
             final ActivityRecord topTaskActivity = startedTask.topRunningActivityLocked();
-            if (!mTargetRootTask.isTopActivityFocusable()
+            if (!mTargetRootTask.isTopActivityFocusableOrPinWindow()
                     || (topTaskActivity != null && topTaskActivity.isTaskOverlay()
                     && mStartActivity != topTaskActivity)) {
                 // If the activity is not focusable, we can't resume it, but still would like to
@@ -2006,6 +2016,7 @@ class ActivityStarter {
             Task targetTask) {
         mSupervisor.getLaunchParamsController().calculate(targetTask, r.info.windowLayout, r,
                 sourceRecord, mOptions, mRequest, PHASE_BOUNDS, mLaunchParams);
+        PopUpWindowController.getInstance().computeLaunchParams(mLaunchParams, mOptions, targetTask);
         mPreferredTaskDisplayArea = mLaunchParams.hasPreferredTaskDisplayArea()
                 ? mLaunchParams.mPreferredTaskDisplayArea
                 : mRootWindowContainer.getDefaultTaskDisplayArea();

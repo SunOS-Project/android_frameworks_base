@@ -39,9 +39,12 @@ import android.os.UserHandle;
 import android.provider.Settings;
 import android.provider.settings.backup.DeviceSpecificSettings;
 import android.provider.settings.backup.GlobalSettings;
+import android.provider.settings.backup.GlobalSettingsExt;
 import android.provider.settings.backup.LargeScreenSettings;
 import android.provider.settings.backup.SecureSettings;
+import android.provider.settings.backup.SecureSettingsExt;
 import android.provider.settings.backup.SystemSettings;
+import android.provider.settings.backup.SystemSettingsExt;
 import android.provider.settings.validators.GlobalSettingsValidators;
 import android.provider.settings.validators.SecureSettingsValidators;
 import android.provider.settings.validators.SystemSettingsValidators;
@@ -670,7 +673,9 @@ public class SettingsBackupAgent extends BackupAgentHelper {
         Cursor cursor = getContentResolver().query(Settings.System.CONTENT_URI, PROJECTION, null,
                 null, null);
         try {
-            return extractRelevantValues(cursor, SystemSettings.SETTINGS_TO_BACKUP);
+            byte[] aosp = extractRelevantValues(cursor, SystemSettings.SETTINGS_TO_BACKUP);
+            byte[] custom = extractRelevantValues(cursor, SystemSettingsExt.SETTINGS_TO_BACKUP);
+            return mergeByteArray(aosp, custom);
         } finally {
             cursor.close();
         }
@@ -680,7 +685,9 @@ public class SettingsBackupAgent extends BackupAgentHelper {
         Cursor cursor = getContentResolver().query(Settings.Secure.CONTENT_URI, PROJECTION, null,
                 null, null);
         try {
-            return extractRelevantValues(cursor, SecureSettings.SETTINGS_TO_BACKUP);
+            byte[] aosp = extractRelevantValues(cursor, SecureSettings.SETTINGS_TO_BACKUP);
+            byte[] custom = extractRelevantValues(cursor, SecureSettingsExt.SETTINGS_TO_BACKUP);
+            return mergeByteArray(aosp, custom);
         } finally {
             cursor.close();
         }
@@ -690,7 +697,9 @@ public class SettingsBackupAgent extends BackupAgentHelper {
         Cursor cursor = getContentResolver().query(Settings.Global.CONTENT_URI, PROJECTION, null,
                 null, null);
         try {
-            return extractRelevantValues(cursor, GlobalSettings.SETTINGS_TO_BACKUP);
+            byte[] aosp = extractRelevantValues(cursor, GlobalSettings.SETTINGS_TO_BACKUP);
+            byte[] custom = extractRelevantValues(cursor, GlobalSettingsExt.SETTINGS_TO_BACKUP);
+            return mergeByteArray(aosp, custom);
         } finally {
             cursor.close();
         }
@@ -1580,6 +1589,13 @@ public class SettingsBackupAgent extends BackupAgentHelper {
                 | ((in[pos + 2] & 0xFF) <<  8)
                 | ((in[pos + 3] & 0xFF) <<  0);
         return result;
+    }
+
+    private static byte[] mergeByteArray(byte[] arr1, byte[] arr2) {
+        byte[] ret = new byte[arr1.length + arr2.length];
+        System.arraycopy(arr1, 0, ret, 0, arr1.length);
+        System.arraycopy(arr2, 0, ret, arr1.length, arr2.length);
+        return ret;
     }
 
     /**

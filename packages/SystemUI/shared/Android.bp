@@ -47,6 +47,7 @@ android_library {
         "src/**/*.java",
         "src/**/*.kt",
         "src/**/*.aidl",
+        ":SystemUIShared.sun-sources",
         ":wm_shell-aidls",
         ":wm_shell_util-sources",
     ],

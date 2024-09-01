@@ -293,6 +293,7 @@ packages_to_document = [
     "junit",
     "org.apache.http",
     "org.json",
+    "org.sun",
     "org.w3c.dom",
     "org.xml.sax",
     "org.xmlpull",

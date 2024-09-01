@@ -125,6 +125,7 @@ filegroup {
         ":services.devicepolicy-sources",
         ":services.midi-sources",
         ":services.musicsearch-sources",
+        ":services.sun-sources",
         ":services.net-sources",
         ":services.permission-sources",
         ":services.print-sources",

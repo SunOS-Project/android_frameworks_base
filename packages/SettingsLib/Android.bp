@@ -65,12 +65,14 @@ android_library {
         "SettingsLibProfileSelector",
         "settingslib_media_flags_lib",
         "settingslib_flags_lib",
+        "custom-preference",
     ],
     plugins: ["androidx.room_room-compiler-plugin"],
     resource_dirs: ["res"],
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
+        ":SettingsLib.sun-sources",
     ],
 }
 

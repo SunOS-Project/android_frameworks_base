@@ -6,3 +6,5 @@ gen/
 .vscode/
 *.code-workspace
 .gradle/
+core/res/res-sun/
+packages/SystemUI/res-sun/

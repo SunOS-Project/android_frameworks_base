@@ -139,6 +139,11 @@ android_app {
         "--enable-sparse-encoding",
     ],
 
+    resource_dirs: [
+        "res",
+        "res-sun",
+    ],
+
     resource_zips: [
         ":remote-color-resources-arsc-zip",
     ],

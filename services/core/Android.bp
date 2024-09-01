@@ -122,6 +122,7 @@ java_library_static {
         ":statslog-contexthub-java-gen",
         ":services.core-sources",
         ":services.core.protologsrc",
+        ":services.sun-sources",
         ":dumpstate_aidl",
         ":framework_native_aidl",
         ":gsiservice_aidl",

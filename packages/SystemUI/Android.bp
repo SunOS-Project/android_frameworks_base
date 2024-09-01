@@ -427,6 +427,7 @@ android_library {
     name: "SystemUI-res",
     use_resource_processor: true,
     resource_dirs: [
+        "res-sun",
         "res-product",
         "res-keyguard",
         "res",
@@ -448,6 +449,7 @@ android_library {
         "src/**/*.kt",
         "src/**/*.java",
         "src/**/I*.aidl",
+        ":SystemUI.sun-sources",
         ":ReleaseJavaFiles",
         "compose/features/src/**/*.kt",
         "compose/facade/enabled/src/**/*.kt",

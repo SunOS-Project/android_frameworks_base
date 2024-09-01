@@ -25,6 +25,7 @@ android_library {
     srcs: [
         "src/**/*.java",
         "src/com/android/providers/settings/EventLogTags.logtags",
+        ":SettingsProvider.sun-sources"
     ],
     libs: [
         "telephony-common",

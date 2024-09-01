@@ -113,3 +113,5 @@
 # CoverageService guards optional jacoco class references with a runtime guard, so we can safely
 # suppress build-time warnings.
 -dontwarn org.jacoco.agent.rt.*
+
+-keep,allowoptimization,allowaccessmodification class org.sun.server.** { *; }

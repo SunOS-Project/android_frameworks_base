@@ -197,6 +197,7 @@ android_library {
         // TODO(b/168581922) protologtool do not support kotlin(*.kt)
         ":wm_shell-sources-kt",
         ":wm_shell-aidls",
+        ":wm_shell-sun-sources",
     ],
     resource_dirs: [
         "res",

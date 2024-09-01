@@ -52,3 +52,5 @@
   static *** v(...);
 }
 -maximumremovedandroidloglevel 2
+
+-keep,allowoptimization,allowaccessmodification class org.sun.systemui.** { *; }

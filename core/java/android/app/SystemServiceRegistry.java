@@ -1680,6 +1680,8 @@ public final class SystemServiceRegistry {
                         return new E2eeContactKeysManager(ctx);
                     }});
 
+        SystemServiceRegistryExt.registerExtServices();
+
         // DO NOT do a flag check like this unless the flag is read-only.
         // (because this code is executed during preload in zygote.)
         // If the flag is mutable, the check should be inside CachedServiceFetcher.
@@ -1886,7 +1888,7 @@ public final class SystemServiceRegistry {
      * Statically registers a system service with the context.
      * This method must be called during static initialization only.
      */
-    private static <T> void registerService(@NonNull String serviceName,
+    static <T> void registerService(@NonNull String serviceName,
             @NonNull Class<T> serviceClass, @NonNull ServiceFetcher<T> serviceFetcher) {
         SYSTEM_SERVICE_NAMES.put(serviceClass, serviceName);
         SYSTEM_SERVICE_FETCHERS.put(serviceName, serviceFetcher);

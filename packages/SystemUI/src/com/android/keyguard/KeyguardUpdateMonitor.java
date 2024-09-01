@@ -45,6 +45,8 @@ import static com.android.internal.widget.LockPatternUtils.StrongAuthTracker.STR
 import static com.android.internal.widget.LockPatternUtils.StrongAuthTracker.STRONG_AUTH_REQUIRED_AFTER_USER_LOCKDOWN;
 import static com.android.systemui.statusbar.policy.DevicePostureController.DEVICE_POSTURE_OPENED;
 
+import static vendor.sun.hardware.battery.ChargingStatus.UNKNOWN;
+
 import android.annotation.AnyThread;
 import android.annotation.MainThread;
 import android.annotation.SuppressLint;
@@ -2331,8 +2333,10 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
         }
 
         // Take a guess at initial SIM state, battery status and PLMN until we get an update
-        mBatteryStatus = new BatteryStatus(BATTERY_STATUS_UNKNOWN, /* level= */ 100, /* plugged= */
-                0, CHARGING_POLICY_DEFAULT, /* maxChargingWattage= */0, /* present= */true);
+        mBatteryStatus = new BatteryStatus(BATTERY_STATUS_UNKNOWN, /* level= */ 100,
+                /* plugged= */ 0, CHARGING_POLICY_DEFAULT, UNKNOWN,
+                /* maxChargingCurrent= */ 0, /* maxChargingMicroVolt= */ 0,
+                /* maxChargingWattage= */ 0, /* temperature= */ 0f, /* present= */ true);
 
         // Watch for interesting updates
         final IntentFilter filter = new IntentFilter();
@@ -3518,7 +3522,15 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
         }
 
         // change in charging current while plugged in
-        if (nowPluggedIn && current.maxChargingWattage != old.maxChargingWattage) {
+        if (nowPluggedIn &&
+              (current.maxChargingCurrent != old.maxChargingCurrent ||
+               current.maxChargingVoltage != old.maxChargingVoltage ||
+               current.maxChargingWattage != old.maxChargingWattage)) {
+            return true;
+        }
+
+        // change in battery temperature
+        if (old.temperature != current.temperature) {
             return true;
         }
 
@@ -3533,7 +3545,16 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
         }
 
         // change in charging status
-        return current.chargingStatus != old.chargingStatus;
+        if (current.chargingStatus != old.chargingStatus) {
+            return true;
+        }
+
+        // change in charging status while plugged in
+        if (nowPluggedIn && current.chargingStatusCustom != old.chargingStatusCustom) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

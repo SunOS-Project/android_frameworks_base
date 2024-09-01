@@ -22,6 +22,8 @@ import static android.os.Flags.stateOfHealthPublic;
 import static com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import static com.android.server.health.Utils.copyV1Battery;
 
+import static org.sun.os.BatteryFeatureManager.EXTRA_CHARGER_STATUS_CUSTOM;
+
 import android.annotation.Nullable;
 import android.app.ActivityManager;
 import android.app.ActivityManagerInternal;
@@ -82,6 +84,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CopyOnWriteArraySet;
+
+import org.sun.os.BatteryFeatureManager;
 
 /**
  * <p>BatteryService monitors the charging status, and charge level of the device
@@ -203,6 +207,11 @@ public final class BatteryService extends SystemService {
     private BatteryPropertiesRegistrar mBatteryPropertiesRegistrar;
     private ArrayDeque<Bundle> mBatteryLevelsEventQueue;
     private long mLastBatteryLevelChangedSentMs;
+
+    private final BatteryFeatureManager mBatteryFeatureManager =
+            BatteryFeatureManager.getInstance();
+    private int mChargingStatusCustom;
+    private int mLastChargingStatusCustom;
 
     private final CopyOnWriteArraySet<BatteryManagerInternal.ChargingPolicyChangeListener>
             mChargingPolicyChangeListeners = new CopyOnWriteArraySet<>();
@@ -537,6 +546,8 @@ public final class BatteryService extends SystemService {
         shutdownIfNoPowerLocked();
         shutdownIfOverTempLocked();
 
+        mChargingStatusCustom = mBatteryFeatureManager.readChargingStatus();
+
         if (force || mHealthInfo.chargingPolicy != mLastChargingPolicy) {
             mLastChargingPolicy = mHealthInfo.chargingPolicy;
             mHandler.post(this::notifyChargingPolicyChanged);
@@ -554,6 +565,7 @@ public final class BatteryService extends SystemService {
                         || mHealthInfo.maxChargingVoltageMicrovolts != mLastMaxChargingVoltage
                         || mHealthInfo.batteryChargeCounterUah != mLastChargeCounter
                         || mInvalidCharger != mLastInvalidCharger
+                        || mChargingStatusCustom != mLastChargingStatusCustom
                         || mHealthInfo.batteryCycleCount != mLastBatteryCycleCount
                         || mHealthInfo.chargingState != mLastCharingState)) {
 
@@ -739,6 +751,7 @@ public final class BatteryService extends SystemService {
             mLastInvalidCharger = mInvalidCharger;
             mLastBatteryCycleCount = mHealthInfo.batteryCycleCount;
             mLastCharingState = mHealthInfo.chargingState;
+            mLastChargingStatusCustom = mChargingStatusCustom;
         }
     }
 
@@ -772,6 +785,7 @@ public final class BatteryService extends SystemService {
         intent.putExtra(BatteryManager.EXTRA_CHARGE_COUNTER, mHealthInfo.batteryChargeCounterUah);
         intent.putExtra(BatteryManager.EXTRA_CYCLE_COUNT, mHealthInfo.batteryCycleCount);
         intent.putExtra(BatteryManager.EXTRA_CHARGING_STATUS, mHealthInfo.chargingState);
+        intent.putExtra(EXTRA_CHARGER_STATUS_CUSTOM, mChargingStatusCustom);
         if (DEBUG) {
             Slog.d(TAG, "Sending ACTION_BATTERY_CHANGED. scale:" + BATTERY_SCALE
                     + ", info:" + mHealthInfo.toString());

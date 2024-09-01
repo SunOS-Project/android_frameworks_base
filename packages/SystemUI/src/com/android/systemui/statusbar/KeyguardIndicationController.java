@@ -119,6 +119,7 @@ import com.android.systemui.statusbar.phone.StatusBarKeyguardViewManager;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.util.AlarmTimeout;
 import com.android.systemui.util.concurrency.DelayableExecutor;
+import com.android.systemui.util.settings.SystemSettings;
 import com.android.systemui.util.wakelock.SettableWakeLock;
 import com.android.systemui.util.wakelock.WakeLock;
 
@@ -303,6 +304,7 @@ public class KeyguardIndicationController {
             KeyguardLogger keyguardLogger,
             AlternateBouncerInteractor alternateBouncerInteractor,
             AlarmManager alarmManager,
+            SystemSettings systemSettings,
             UserTracker userTracker,
             BouncerMessageInteractor bouncerMessageInteractor,
             FeatureFlags flags,
@@ -368,6 +370,9 @@ public class KeyguardIndicationController {
                 TAG,
                 mHandler
         );
+
+        KeyguardIndicationControllerExt.getInstance().init(mContext, mBackgroundExecutor,
+                mHandler, systemSettings, mUserTracker);
     }
 
     /** Call this after construction to finish setting up the instance. */
@@ -434,6 +439,7 @@ public class KeyguardIndicationController {
      * Cleanup
      */
     public void destroy() {
+        KeyguardIndicationControllerExt.getInstance().destroy();
         mHandler.removeCallbacksAndMessages(null);
         mHideBiometricMessageHandler.cancel();
         mHideTransientMessageHandler.cancel();
@@ -1102,7 +1108,8 @@ public class KeyguardIndicationController {
     }
 
     protected String computePowerChargingStringIndication() {
-        final boolean hasChargingTime = mChargingTimeRemaining > 0;
+        final boolean hasChargingTime = mChargingTimeRemaining > 0 &&
+                !KeyguardIndicationControllerExt.getInstance().isChargingRemainingTimeDisabled();
         int chargingId;
         if (mPowerPluggedInWired) {
             switch (mChargingSpeed) {
@@ -1122,6 +1129,11 @@ public class KeyguardIndicationController {
                             : R.string.keyguard_plugged_in;
                     break;
             }
+            final int overrideId = KeyguardIndicationControllerExt.getInstance()
+                    .getBatteryFeatureChargingId(mChargingSpeed, hasChargingTime);
+            if (overrideId > 0) {
+                chargingId = overrideId;
+            }
         } else if (mPowerPluggedInWireless) {
             chargingId = hasChargingTime
                     ? R.string.keyguard_indication_charging_time_wireless
@@ -1137,13 +1149,14 @@ public class KeyguardIndicationController {
         }
 
         String percentage = NumberFormat.getPercentInstance().format(mBatteryLevel / 100f);
+        String batteryInfo = KeyguardIndicationControllerExt.getInstance().getBatteryInfo();
         if (hasChargingTime) {
             String chargingTimeFormatted = Formatter.formatShortElapsedTimeRoundingUpToMinutes(
                     mContext, mChargingTimeRemaining);
             return mContext.getResources().getString(chargingId, chargingTimeFormatted,
-                    percentage);
+                    percentage) + batteryInfo;
         } else {
-            return mContext.getResources().getString(chargingId, percentage);
+            return mContext.getResources().getString(chargingId, percentage) + batteryInfo;
         }
     }
 
@@ -1288,6 +1301,9 @@ public class KeyguardIndicationController {
                 mKeyguardLogger.log(TAG, ERROR, "Error calling IBatteryStats", e);
                 mChargingTimeRemaining = -1;
             }
+
+            KeyguardIndicationControllerExt.getInstance().onBatteryInfoUpdated(
+                    status.maxChargingCurrent, status.maxChargingVoltage, status.temperature);
 
             mKeyguardLogger.logRefreshBatteryInfo(isChargingOrFull, mPowerPluggedIn, mBatteryLevel,
                     mBatteryDefender);

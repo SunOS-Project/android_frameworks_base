@@ -3707,6 +3707,18 @@ public final class BatteryStatsService extends IBatteryStats.Stub
     }
 
     /**
+     * Reset battery statistics
+     */
+    @Override
+    public void resetStatistics() {
+        synchronized (mStats) {
+            mStats.resetAllStatsAndHistoryLocked(
+                    BatteryStatsImpl.RESET_REASON_ADB_COMMAND);
+            mPowerStatsStore.reset();
+        }
+    }
+
+    /**
      * Sets battery AC charger to enabled/disabled, and freezes the battery state.
      */
     @Override

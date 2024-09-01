@@ -271,6 +271,9 @@ interface IBatteryStats {
     oneway void noteWifiControllerActivity(in WifiActivityEnergyInfo info);
 
     /** {@hide} */
+    void resetStatistics();
+
+    /** {@hide} */
     @EnforcePermission("POWER_SAVER")
     boolean setChargingStateUpdateDelayMillis(int delay);
 

@@ -65,13 +65,15 @@
 #define STR(x)   #x
 #define STRTO(x) STR(x)
 
+#define TYPE_FORCED 3  // Must match org.sun.view.DisplayResolutionManager.TYPE_FORCED
+
 namespace android {
 
 using ui::DisplayMode;
 
 static const char OEM_BOOTANIMATION_FILE[] = "/oem/media/bootanimation.zip";
-static const char PRODUCT_BOOTANIMATION_DARK_FILE[] = "/product/media/bootanimation-dark.zip";
 static const char PRODUCT_BOOTANIMATION_FILE[] = "/product/media/bootanimation.zip";
+static const char PRODUCT_BOOTANIMATION_LOWER_RESOLUTION_FILE[] = "/product/media/bootanimation-lower_resolution.zip";
 static const char SYSTEM_BOOTANIMATION_FILE[] = "/system/media/bootanimation.zip";
 static const char APEX_BOOTANIMATION_FILE[] = "/apex/com.android.bootanimation/etc/bootanimation.zip";
 static const char OEM_SHUTDOWNANIMATION_FILE[] = "/oem/media/shutdownanimation.zip";
@@ -571,6 +573,13 @@ status_t BootAnimation::readyToRun() {
     mMaxWidth = android::base::GetIntProperty("ro.surface_flinger.max_graphics_width", 0);
     mMaxHeight = android::base::GetIntProperty("ro.surface_flinger.max_graphics_height", 0);
     ui::Size resolution = displayMode.resolution;
+    const bool shouldScale =
+            android::base::GetIntProperty("ro.sun.display.resolution_switch", 0) == TYPE_FORCED &&
+            android::base::GetIntProperty("persist.sys.sun.bootanimation.scale", 0) == 1;
+    if (shouldScale) {
+        resolution.width = (int) (resolution.width * 0.75f);
+        resolution.height = (int) (resolution.height * 0.75f);
+    }
     resolution = limitSurfaceSize(resolution.width, resolution.height);
     // create the native surface
     sp<SurfaceControl> control = session()->createSurface(String8("BootAnimation"),
@@ -589,6 +598,11 @@ status_t BootAnimation::readyToRun() {
         }
         t.setLayerStack(control, ui::DEFAULT_LAYER_STACK);
     }
+
+    // Scale forced resolution to physical resolution
+    Rect forcedRes(0, 0, resolution.width, resolution.height);
+    Rect physRes(0, 0, displayMode.resolution.width, displayMode.resolution.height);
+    t.setDisplayProjection(mDisplayToken, ui::ROTATION_0, forcedRes, physRes);
 
     t.setLayer(control, 0x40000000)
         .apply();
@@ -762,9 +776,12 @@ void BootAnimation::findBootAnimationFile() {
     }
 
     ATRACE_CALL();
-    const bool playDarkAnim = android::base::GetIntProperty("ro.boot.theme", 0) == 1;
+    const bool shouldScale =
+            android::base::GetIntProperty("ro.sun.display.resolution_switch", 0) == TYPE_FORCED &&
+            android::base::GetIntProperty("persist.sys.sun.bootanimation.scale", 0) == 1;
     static const std::vector<std::string> bootFiles = {
-        APEX_BOOTANIMATION_FILE, playDarkAnim ? PRODUCT_BOOTANIMATION_DARK_FILE : PRODUCT_BOOTANIMATION_FILE,
+        APEX_BOOTANIMATION_FILE, shouldScale ?
+            PRODUCT_BOOTANIMATION_LOWER_RESOLUTION_FILE : PRODUCT_BOOTANIMATION_FILE,
         OEM_BOOTANIMATION_FILE, SYSTEM_BOOTANIMATION_FILE
     };
     static const std::vector<std::string> shutdownFiles = {

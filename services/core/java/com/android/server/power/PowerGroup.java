@@ -229,6 +229,7 @@ public class PowerGroup {
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_POWER);
         }
+        PowerManagerServiceExt.getInstance().onWakeUp(reason);
     }
 
     boolean dreamLocked(long eventTime, int uid, boolean allowWake) {
@@ -272,6 +273,7 @@ public class PowerGroup {
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_POWER);
         }
+        PowerManagerServiceExt.getInstance().onDoze(reason);
         return true;
     }
 

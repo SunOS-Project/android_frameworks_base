@@ -1175,6 +1175,8 @@ public final class PowerManagerService extends SystemService
         mFeatureFlags = injector.getFlags();
         mInjector = injector;
 
+        PowerManagerServiceExt.getInstance().init(context);
+
         mHandlerThread = new ServiceThread(TAG,
                 Process.THREAD_PRIORITY_DISPLAY, /* allowIo= */ false);
         mHandlerThread.start();
@@ -1364,6 +1366,8 @@ public final class PowerManagerService extends SystemService
             mPolicy = getLocalService(WindowManagerPolicy.class);
             mBatteryManagerInternal = getLocalService(BatteryManagerInternal.class);
             mAttentionDetector.systemReady(mContext);
+
+            PowerManagerServiceExt.getInstance().systemReady();
 
             SensorManager sensorManager = new SystemSensorManager(mContext, mHandler.getLooper());
 

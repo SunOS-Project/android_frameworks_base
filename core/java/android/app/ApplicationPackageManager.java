@@ -828,6 +828,10 @@ public class ApplicationPackageManager extends PackageManager {
 
     @Override
     public boolean hasSystemFeature(String name, int version) {
+        final int retExt = ApplicationPackageManagerExt.hasSystemFeature(name);
+        if (retExt != ApplicationPackageManagerExt.HAS_FEATURE_UNHANDLED) {
+            return retExt == ApplicationPackageManagerExt.HAS_FEATURE_YES;
+        }
         return mHasSystemFeatureCache.query(new HasSystemFeatureQuery(name, version));
     }
 

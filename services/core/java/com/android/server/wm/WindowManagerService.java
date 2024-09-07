@@ -395,6 +395,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.sun.view.ISystemGestureListener;
+
 /** {@hide} */
 public class WindowManagerService extends IWindowManager.Stub
         implements Watchdog.Monitor, WindowManagerPolicy.WindowManagerFuncs {
@@ -10218,6 +10220,16 @@ public class WindowManagerService extends IWindowManager.Stub
     public void unregisterScreenRecordingCallback(IScreenRecordingCallback callback) {
         unregisterScreenRecordingCallback_enforcePermission();
         mScreenRecordingCallbackController.unregister(callback);
+    }
+
+    @Override
+    public void registerSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        mPolicy.registerSystemGestureListener(pkg, gesture, listener);
+    }
+
+    @Override
+    public void unregisterSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        mPolicy.unregisterSystemGestureListener(pkg, gesture, listener);
     }
 
     void onProcessActivityVisibilityChanged(int uid, boolean visible) {

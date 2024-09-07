@@ -260,6 +260,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.sun.view.ISystemGestureListener;
+
 /**
  * WindowManagerPolicy implementation for the Android phone UI.  This
  * introduces a new method suffix, Lp, for an internal lock of the
@@ -5348,6 +5350,24 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         }
 
         return 0;
+    }
+
+    @Override
+    public int interceptMotionBeforeQueueing(MotionEvent event) {
+        if (!mSystemBooted) {
+            return WindowManagerPolicy.SYSTEM_GESTURE_NONE;
+        }
+        return PhoneWindowManagerExt.getInstance().interceptMotionBeforeQueueing(event);
+    }
+
+    @Override
+    public void registerSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        PhoneWindowManagerExt.getInstance().registerSystemGestureListener(pkg, gesture, listener);
+    }
+
+    @Override
+    public void unregisterSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        PhoneWindowManagerExt.getInstance().unregisterSystemGestureListener(pkg, gesture, listener);
     }
 
     private boolean shouldDispatchInputWhenNonInteractive(int displayId, int keyCode) {

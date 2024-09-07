@@ -32,6 +32,7 @@ import android.util.Slog;
 import android.view.Display;
 import android.view.InputApplicationHandle;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.SurfaceControl;
 import android.view.WindowManager;
 import android.view.WindowManagerPolicyConstants;
@@ -163,6 +164,11 @@ final class InputManagerCallback implements InputManagerService.WindowManagerCal
     @Override
     public int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags) {
         return mService.mPolicy.interceptKeyBeforeQueueing(event, policyFlags);
+    }
+
+    @Override
+    public int interceptMotionBeforeQueueing(MotionEvent event) {
+        return mService.mPolicy.interceptMotionBeforeQueueing(event);
     }
 
     /** {@inheritDoc} */

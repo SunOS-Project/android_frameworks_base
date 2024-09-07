@@ -85,6 +85,7 @@ import android.util.proto.ProtoOutputStream;
 import android.view.Display;
 import android.view.IDisplayFoldListener;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
 import android.view.WindowManagerPolicyConstants;
@@ -98,6 +99,8 @@ import java.io.PrintWriter;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
+
+import org.sun.view.ISystemGestureListener;
 
 /**
  * This interface supplies all UI-specific behavior of the window manager.  An
@@ -158,6 +161,13 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
     int FINISH_LAYOUT_REDO_ANIM = 0x0008;
     /** Layer for the screen off animation */
     int COLOR_FADE_LAYER = 0x40000001;
+
+    int SYSTEM_GESTURE_NONE = 0x01;
+    int SYSTEM_GESTURE_DOWN = 0x02;
+    int SYSTEM_GESTURE_MOVE = 0x04;
+    int SYSTEM_GESTURE_MOVE_TRIGGERED = 0x08;
+    int SYSTEM_GESTURE_RESET = 0x10;
+    int SYSTEM_GESTURE_CANCELED = 0x20;
 
     /**
      * Register shortcuts for window manager to dispatch.
@@ -1253,6 +1263,16 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
      * A new window on default display has been focused.
      */
     default void onDefaultDisplayFocusChangedLw(WindowState newFocus) {}
+
+    default int interceptMotionBeforeQueueing(MotionEvent event) {
+        return SYSTEM_GESTURE_NONE;
+    }
+
+    default void registerSystemGestureListener(String pkg, int gesture,
+            ISystemGestureListener listener) {}
+
+    default void unregisterSystemGestureListener(String pkg, int gesture,
+            ISystemGestureListener listener) {}
 
     /**
      * Returns {@code true} if the key will be handled globally and not forwarded to all apps.

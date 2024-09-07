@@ -61,6 +61,7 @@ import android.util.EventLog;
 import android.util.Slog;
 import android.view.InputChannel;
 import android.view.InputWindowHandle;
+import android.view.MotionEvent;
 import android.view.SurfaceControl;
 import android.view.WindowManager;
 
@@ -548,6 +549,10 @@ final class InputMonitor {
             window.paused = false;
             updateInputWindowsLw(true /*force*/);
         }
+    }
+
+    public int interceptMotionBeforeQueueing(MotionEvent event) {
+        return mService.mPolicy.interceptMotionBeforeQueueing(event);
     }
 
     void dump(PrintWriter pw, String prefix) {

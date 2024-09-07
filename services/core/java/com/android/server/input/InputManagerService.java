@@ -97,6 +97,7 @@ import android.view.InputEvent;
 import android.view.InputMonitor;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.PointerIcon;
 import android.view.Surface;
 import android.view.SurfaceControl;
@@ -2405,6 +2406,12 @@ public class InputManagerService extends IInputManager.Stub
 
     // Native callback.
     @SuppressWarnings("unused")
+    private int interceptMotionBeforeQueueing(MotionEvent event) {
+        return mWindowManagerCallbacks.interceptMotionBeforeQueueing(event);
+    }
+
+    // Native callback.
+    @SuppressWarnings("unused")
     private int interceptMotionBeforeQueueingNonInteractive(int displayId,
             int source, int action, long whenNanos, int policyFlags) {
         return mWindowManagerCallbacks.interceptMotionBeforeQueueingNonInteractive(
@@ -2753,6 +2760,11 @@ public class InputManagerService extends IInputManager.Stub
          * to pass it to the user)
          */
         int interceptKeyBeforeQueueing(KeyEvent event, int policyFlags);
+
+        /**
+         * Only used for system gesture listener
+         */
+        int interceptMotionBeforeQueueing(MotionEvent event);
 
         /**
          * Provides an opportunity for the window manager policy to intercept early motion event

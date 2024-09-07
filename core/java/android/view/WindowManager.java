@@ -148,6 +148,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
+import org.sun.view.ISystemGestureListener;
+
 /**
  * The interface that apps use to talk to the window manager.
  * <p>
@@ -6147,6 +6149,16 @@ public interface WindowManager extends ViewManager {
      */
     @SystemApi
     default void unregisterTaskFpsCallback(@NonNull TaskFpsCallback callback) {}
+
+    /** @hide */
+    default void registerSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** @hide */
+    default void unregisterSystemGestureListener(String pkg, int gesture, ISystemGestureListener listener) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Take a snapshot using the same path that's used for Recents. This is used for Testing only.

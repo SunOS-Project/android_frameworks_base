@@ -59,6 +59,8 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
+import org.sun.view.ISystemGestureListener;
+
 /**
  * Provides low-level communication with the system window manager for
  * operations that are bound to a particular context, display or parent window.
@@ -432,6 +434,26 @@ public final class WindowManagerImpl implements WindowManager {
                     iterator.remove();
                 }
             }
+        }
+    }
+
+    @Override
+    public void registerSystemGestureListener(String pkg, int gesture,
+            ISystemGestureListener listener) {
+        try {
+            WindowManagerGlobal.getWindowManagerService().registerSystemGestureListener(
+                    pkg, gesture, listener);
+        } catch (RemoteException e) {
+        }
+    }
+
+    @Override
+    public void unregisterSystemGestureListener(String pkg, int gesture,
+            ISystemGestureListener listener) {
+        try {
+            WindowManagerGlobal.getWindowManagerService().unregisterSystemGestureListener(
+                    pkg, gesture, listener);
+        } catch (RemoteException e) {
         }
     }
 

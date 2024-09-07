@@ -119,6 +119,7 @@ static struct {
     jmethodID notifyVibratorState;
     jmethodID filterInputEvent;
     jmethodID interceptKeyBeforeQueueing;
+    jmethodID interceptMotionBeforeQueueing;
     jmethodID interceptMotionBeforeQueueingNonInteractive;
     jmethodID interceptKeyBeforeDispatching;
     jmethodID dispatchUnhandledKey;
@@ -242,6 +243,13 @@ static SpriteIcon toSpriteIcon(PointerIcon pointerIcon) {
 
 enum {
     WM_ACTION_PASS_TO_USER = 1,
+
+    WM_ACTION_SYSTEM_GESTURE_NONE = 1,
+    WM_ACTION_SYSTEM_GESTURE_DOWN = 2,
+    WM_ACTION_SYSTEM_GESTURE_MOVE = 4,
+    WM_ACTION_SYSTEM_GESTURE_MOVE_TRIGGERED = 8,
+    WM_ACTION_SYSTEM_GESTURE_RESET = 16,
+    WM_ACTION_SYSTEM_GESTURE_CANCELED = 32,
 };
 
 static std::string getStringElementFromJavaArray(JNIEnv* env, jobjectArray array, jsize index) {
@@ -351,6 +359,7 @@ public:
     void interceptMotionBeforeQueueing(ui::LogicalDisplayId displayId, uint32_t source,
                                        int32_t action, nsecs_t when,
                                        uint32_t& policyFlags) override;
+    void interceptMotionBeforeQueueingExt(const MotionEvent& motionEvent, uint32_t& policyFlags) override;
     nsecs_t interceptKeyBeforeDispatching(const sp<IBinder>& token, const KeyEvent& keyEvent,
                                           uint32_t policyFlags) override;
     std::optional<KeyEvent> dispatchUnhandledKey(const sp<IBinder>& token, const KeyEvent& keyEvent,
@@ -1511,6 +1520,39 @@ void NativeInputManager::interceptMotionBeforeQueueing(ui::LogicalDisplayId disp
         return;
     }
     handleInterceptActions(wmActions, when, /*byref*/ policyFlags);
+}
+
+void NativeInputManager::interceptMotionBeforeQueueingExt(const MotionEvent& motionEvent,
+        uint32_t& policyFlags) {
+    ATRACE_CALL();
+
+    JNIEnv* env = jniEnv();
+    ScopedLocalFrame localFrame(env);
+
+    ScopedLocalRef<jobject> motionEventObj = android_view_MotionEvent_obtainAsCopy(env, motionEvent);
+    if (!motionEventObj.get()) {
+        ALOGE("Failed to obtain motion event object for interceptMotionBeforeQueueingExt.");
+        return;
+    }
+
+    const jint wmActions = env->CallIntMethod(mServiceObj,
+            gServiceClassInfo.interceptMotionBeforeQueueing, motionEventObj.get());
+    android_view_MotionEvent_recycle(env, motionEventObj.get());
+    if (checkAndClearExceptionFromCallback(env, "interceptMotionBeforeQueueing")) {
+        return;
+    }
+
+    if ((wmActions & WM_ACTION_SYSTEM_GESTURE_DOWN) != 0) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_DOWN;
+    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_MOVE) != 0) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_MOVE;
+    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_MOVE_TRIGGERED) != 0) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_MOVE_TRIGGERED;
+    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_RESET) != 0) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_RESET;
+    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_CANCELED) != 0) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_CANCELED;
+    }
 }
 
 void NativeInputManager::handleInterceptActions(jint wmActions, nsecs_t when,
@@ -2915,6 +2957,10 @@ int register_android_server_InputManager(JNIEnv* env) {
 
     GET_METHOD_ID(gServiceClassInfo.interceptMotionBeforeQueueingNonInteractive, clazz,
             "interceptMotionBeforeQueueingNonInteractive", "(IIIJI)I");
+
+    GET_METHOD_ID(gServiceClassInfo.interceptMotionBeforeQueueing, clazz,
+                  "interceptMotionBeforeQueueing",
+                  "(Landroid/view/MotionEvent;)I");
 
     GET_METHOD_ID(gServiceClassInfo.interceptKeyBeforeDispatching, clazz,
             "interceptKeyBeforeDispatching",

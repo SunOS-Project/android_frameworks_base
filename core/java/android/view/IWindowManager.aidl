@@ -78,6 +78,8 @@ import android.window.ScreenCapture;
 import android.window.TrustedPresentationThresholds;
 import android.window.WindowContextInfo;
 
+import org.sun.view.ISystemGestureListener;
+
 /**
  * System private interface to the window manager.
  *
@@ -1066,6 +1068,16 @@ interface IWindowManager
      @JavaPassthrough(annotation = "@android.annotation.RequiresPermission(android.Manifest"
              + ".permission.ACCESS_SURFACE_FLINGER)")
     boolean replaceContentOnDisplay(int displayId, in SurfaceControl sc);
+
+    /**
+     * Register system gesture listener
+     */
+    oneway void registerSystemGestureListener(in String pkg, int gesture, in ISystemGestureListener listener);
+
+    /**
+     * Unregister system gesture listener
+     */
+    oneway void unregisterSystemGestureListener(in String pkg, int gesture, in ISystemGestureListener listener);
 
     /**
      * Registers a DecorView gesture listener for a given display.

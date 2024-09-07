@@ -1022,6 +1022,11 @@ interface IWindowManager
             in ScreenCapture.ScreenCaptureListener listener);
 
     /**
+     * Take screenshot for internal useage
+     */
+    oneway void takeScreenshotExt(boolean fullscreen);
+
+    /**
      * Returns {@code true} if the key will be handled globally and not forwarded to all apps.
      *
      * @param keyCode the key code to check

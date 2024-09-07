@@ -54,6 +54,8 @@ import com.android.internal.logging.nano.MetricsProto.MetricsEvent;
 import com.android.server.statusbar.StatusBarManagerInternal;
 import com.android.server.wm.WindowManagerInternal;
 
+import org.sun.server.policy.PocketModeController;
+
 /**
  * The service that listens for gestures detected in sensor firmware and starts the intent
  * accordingly.
@@ -642,6 +644,10 @@ public class GestureLauncherService extends SystemService {
                             "userSetupComplete = %s, ignoring camera gesture.",
                             userSetupComplete));
                 }
+                return false;
+            }
+            if (source == StatusBarManager.CAMERA_LAUNCH_SOURCE_POWER_DOUBLE_TAP &&
+                    PocketModeController.getInstance().isPocketLockShowing()) {
                 return false;
             }
             if (DBG) {

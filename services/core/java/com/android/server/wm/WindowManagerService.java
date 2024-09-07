@@ -3764,6 +3764,11 @@ public class WindowManagerService extends IWindowManager.Stub
         }
     }
 
+    @Override
+    public void takeScreenshotExt(boolean fullscreen) {
+        mPolicy.takeScreenshotExt(fullscreen);
+    }
+
     // Called by window manager policy. Not exposed externally.
     @Override
     public void lockDeviceNow() {

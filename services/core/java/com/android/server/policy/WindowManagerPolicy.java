@@ -1099,6 +1099,11 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
     void setNavBarVirtualKeyHapticFeedbackEnabledLw(boolean enabled);
 
     /**
+     * Called by System UI to take a screenshot
+     */
+    void takeScreenshotExt(boolean fullscreen);
+
+    /**
      * Specifies whether there is an on-screen navigation bar separate from the status bar.
      */
     public boolean hasNavigationBar();

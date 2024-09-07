@@ -2428,6 +2428,9 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
     }
 
     private boolean isAllowedToUseHiddenApis() {
+        if (ApplicationInfoExt.isAllowedToUseHiddenApis(this)) {
+            return true;
+        }
         if (isSignedWithPlatformKey()) {
             return true;
         } else if (isSystemApp() || isUpdatedSystemApp()) {

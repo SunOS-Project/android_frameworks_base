@@ -1928,9 +1928,13 @@ class WindowState extends WindowContainer<WindowState> implements WindowManagerP
     }
 
     boolean isSecureLocked() {
-        if (mWmService.getDisableSecureWindows()) {
+        if (WindowManagerServiceExt.getInstance().shouldIgnoreFlagSecure()) {
             return false;
         }
+        // Commented out for duplicated custom feature
+        // if (mWmService.getDisableSecureWindows()) {
+        //     return false;
+        // }
 
         if ((mAttrs.flags & WindowManager.LayoutParams.FLAG_SECURE) != 0) {
             return true;

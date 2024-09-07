@@ -91,6 +91,9 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import org.sun.app.GameModeInfo;
+import org.sun.app.GameModeManager;
+import org.sun.app.IGameModeInfoListener;
 import org.sun.systemui.statusbar.phone.PopUpViewController;
 
 /**
@@ -152,6 +155,8 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
     private final OnUserInteractionCallback mOnUserInteractionCallback;
 
     private boolean mIsCollapsingToShowActivityOverLockscreen;
+
+    private boolean mSuppressFullscreenIntentByGame;
 
     @Inject
     StatusBarNotificationActivityStarter(
@@ -222,6 +227,17 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
         mNotificationAnimationProvider = notificationAnimationProvider;
         mPowerInteractor = powerInteractor;
         mUserTracker = userTracker;
+
+        final GameModeManager manager = context.getSystemService(GameModeManager.class);
+        manager.registerGameModeInfoListener(new IGameModeInfoListener.Stub() {
+            @Override
+            public void onGameModeInfoChanged() {
+                final GameModeInfo info = manager.getGameModeInfo();
+                if (info != null) {
+                    mSuppressFullscreenIntentByGame = info.shouldSuppressFullscreenIntent();
+                }
+            }
+        });
 
         launchFullScreenIntentProvider.registerListener(entry -> launchFullScreenIntent(entry));
     }
@@ -640,6 +656,9 @@ public class StatusBarNotificationActivityStarter implements NotificationActivit
 
     @VisibleForTesting
     void launchFullScreenIntent(NotificationEntry entry) {
+        if (mSuppressFullscreenIntentByGame) {
+            return;
+        }
         // Skip if device is in VR mode.
         if (mPresenter.isDeviceInVrMode()) {
             mLogger.logFullScreenIntentSuppressedByVR(entry);

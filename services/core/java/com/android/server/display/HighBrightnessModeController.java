@@ -44,6 +44,10 @@ import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
+import org.sun.app.GameModeInfo;
+import org.sun.app.GameModeManager;
+import org.sun.app.IGameModeInfoListener;
+
 /**
  * Controls the status of high-brightness mode for devices that support it. This class assumes that
  * an instance is always created even if a device does not support high-brightness mode (HBM); in
@@ -100,6 +104,8 @@ class HighBrightnessModeController {
     private @BrightnessInfo.BrightnessMaxReason int mThrottlingReason =
         BrightnessInfo.BRIGHTNESS_MAX_REASON_NONE;
 
+    private boolean mInGame = false;
+
     private int mHbmMode = BrightnessInfo.HIGH_BRIGHTNESS_MODE_OFF;
     private boolean mIsHdrLayerPresent = false;
     // mMaxDesiredHdrSdrRatio should only be applied when there is a valid backlight->nits mapping
@@ -146,6 +152,23 @@ class HighBrightnessModeController {
         mHdrListener = new HdrListener();
 
         resetHbmData(width, height, displayToken, displayUniqueId, hbmData, hdrBrightnessCfg);
+    }
+
+    void registerGameModeInfoListener() {
+        final GameModeManager manager = mContext.getSystemService(GameModeManager.class);
+        manager.registerGameModeInfoListener(new IGameModeInfoListener.Stub() {
+            @Override
+            public void onGameModeInfoChanged() {
+                final GameModeInfo info = manager.getGameModeInfo();
+                if (info != null) {
+                    final boolean inGame = info.isInGame();
+                    if (mInGame != inGame) {
+                        mInGame = info.isInGame();
+                        updateHbmMode();
+                    }
+                }
+            }
+        });
     }
 
     void setAutoBrightnessEnabled(int state) {
@@ -357,6 +380,9 @@ class HighBrightnessModeController {
     }
 
     boolean isHbmCurrentlyAllowed() {
+        if (mInGame) {
+            return true;
+        }
         // Returns true if HBM is allowed (above the ambient lux threshold) and there's still
         // time within the current window for additional HBM usage. We return false if there is an
         // HDR layer because we don't want the brightness MAX to change for HDR, which has its

@@ -68,6 +68,10 @@ class BrightnessRangeController {
         updateHdrClamper(info, displayToken, displayDeviceConfig);
     }
 
+    void registerGameModeInfoListener() {
+        mHbmController.registerGameModeInfoListener();
+    }
+
     void dump(PrintWriter pw) {
         pw.println("BrightnessRangeController:");
         pw.println("  mUseNormalBrightnessController=" + mUseNbmController);

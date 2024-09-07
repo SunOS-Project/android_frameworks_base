@@ -62,6 +62,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.TimeUnit;
 
+import org.sun.app.GameModeInfo;
+import org.sun.app.GameModeManager;
+import org.sun.app.IGameModeInfoListener;
+
 /**
  * Manages the associated display brightness when in auto-brightness mode. This is also
  * responsible for managing the brightness lux-nits mapping strategies. Internally also listens to
@@ -273,6 +277,8 @@ public class AutomaticBrightnessController {
     private PackageManager mPackageManager;
     private Context mContext;
     private int mState = AUTO_BRIGHTNESS_DISABLED;
+
+    private boolean mDisableAutoBrightnessByGame;
 
     private Clock mClock;
     private final Injector mInjector;
@@ -581,6 +587,19 @@ public class AutomaticBrightnessController {
 
     public boolean isInIdleMode() {
         return mCurrentBrightnessMapper.getMode() == AUTO_BRIGHTNESS_MODE_IDLE;
+    }
+
+    void registerGameModeInfoListener() {
+        final GameModeManager manager = mContext.getSystemService(GameModeManager.class);
+        manager.registerGameModeInfoListener(new IGameModeInfoListener.Stub() {
+            @Override
+            public void onGameModeInfoChanged() {
+                final GameModeInfo info = manager.getGameModeInfo();
+                if (info != null) {
+                    mDisableAutoBrightnessByGame = info.shouldDisableAutoBrightness();
+                }
+            }
+        });
     }
 
     public void dump(PrintWriter pw) {
@@ -892,6 +911,10 @@ public class AutomaticBrightnessController {
                         "mAmbientLux=" + mAmbientLux);
             }
             updateAutoBrightness(true /* sendUpdate */, false /* isManuallySet */);
+        }
+
+        if (mDisableAutoBrightnessByGame) {
+            return;
         }
 
         long nextBrightenTransition = nextAmbientLightBrighteningTransition(time);

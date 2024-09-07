@@ -57,6 +57,8 @@ import com.android.server.statusbar.StatusBarManagerInternal;
 import java.io.PrintWriter;
 import java.util.List;
 
+import org.sun.server.app.GameModeController;
+
 /**
  * Policy that implements who gets control over the windows generating insets.
  */
@@ -150,6 +152,13 @@ class InsetsPolicy {
     }
 
     void showTransient(@InsetsType int types, boolean isGestureOnSystemBar) {
+        showTransient(types, isGestureOnSystemBar, false);
+    }
+
+    void showTransient(@InsetsType int types, boolean isGestureOnSystemBar,
+            boolean swipeOnStatusBar) {
+        final boolean isGestureLocked = GameModeController.getInstance().isGestureLocked(!swipeOnStatusBar);
+        final boolean isStatusBarLocked = GameModeController.getInstance().shouldLockStatusbar();
         @InsetsType int showingTransientTypes = mShowingTransientTypes;
         final InsetsState rawState = mStateController.getRawInsetsState();
         for (int i = rawState.sourceSize() - 1; i >= 0; i--) {
@@ -161,7 +170,14 @@ class InsetsPolicy {
             if ((source.getType() & types) == 0) {
                 continue;
             }
+            if (GameModeController.getInstance().interceptShowTransient(
+                    type, swipeOnStatusBar, isGestureLocked, isStatusBarLocked)) {
+                continue;
+            }
             showingTransientTypes |= type;
+        }
+        if (isGestureLocked && !swipeOnStatusBar) {
+            GameModeController.getInstance().warnGestureLocked();
         }
         if (mShowingTransientTypes != showingTransientTypes) {
             mShowingTransientTypes = showingTransientTypes;

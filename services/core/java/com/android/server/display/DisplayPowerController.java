@@ -3031,6 +3031,10 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
 
                 case MSG_BOOT_COMPLETED:
                     mBootCompleted = true;
+                    if (mAutomaticBrightnessController != null) {
+                        mAutomaticBrightnessController.registerGameModeInfoListener();
+                    }
+                    mBrightnessRangeController.registerGameModeInfoListener();
                     updatePowerState();
                     break;
 

@@ -232,6 +232,19 @@ public class PackageSetting extends SettingBase implements PackageStateInternal 
     @Nullable
     private byte[] mRestrictUpdateHash;
 
+    private boolean forceFull = true;
+
+    @Override
+    public boolean isForceFull() {
+        return forceFull;
+    }
+
+    @Override
+    public void setForceFull(boolean forceFull) {
+        this.forceFull = forceFull;
+        onChanged();
+    }
+
     /**
      * Snapshot support.
      */
@@ -723,6 +736,7 @@ public class PackageSetting extends SettingBase implements PackageStateInternal 
         mTargetSdkVersion = other.mTargetSdkVersion;
         mRestrictUpdateHash = other.mRestrictUpdateHash == null
                 ? null : other.mRestrictUpdateHash.clone();
+        forceFull = other.forceFull;
 
         usesSdkLibraries = other.usesSdkLibraries != null
                 ? Arrays.copyOf(other.usesSdkLibraries,

@@ -844,6 +844,12 @@ interface IPackageManager {
 
     boolean isAppArchivable(String packageName, in UserHandle user);
 
+    @UnsupportedAppUsage
+    boolean isForceFull(in String packageName);
+
+    @UnsupportedAppUsage
+    void setForceFull(in String packageName, boolean forceFull);
+
     @EnforcePermission("GET_APP_METADATA")
     int getAppMetadataSource(String packageName, int userId);
 

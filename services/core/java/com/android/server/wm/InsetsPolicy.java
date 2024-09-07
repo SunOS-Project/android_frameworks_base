@@ -51,6 +51,7 @@ import android.view.inputmethod.InputMethodManager;
 
 import com.android.internal.R;
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.server.pm.ForceFullController;
 import com.android.server.statusbar.StatusBarManagerInternal;
 
 import java.io.PrintWriter;
@@ -220,6 +221,9 @@ class InsetsPolicy {
         }
         state = adjustVisibilityForIme(target, state, state == originalState);
         state = adjustInsetsForRoundedCorners(target.mToken, state, state == originalState);
+        if (target != null && target.mActivityRecord != null) {
+            state = ForceFullController.getInstance().adjustInsetsForWindow(target.mActivityRecord.info, state);
+        }
         state = PopUpWindowController.getInstance().adjustInsetsForWindow(target, state);
         return state;
     }

@@ -11786,4 +11786,22 @@ public abstract class PackageManager {
         throw new UnsupportedOperationException(
                 "parseServiceMetadata not implemented in subclass");
     }
+
+    /** @hide */
+    public boolean isForceFull(String packageName) {
+        try {
+            return ActivityThread.getPackageManager().isForceFull(packageName);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
+
+    /** @hide */
+    public void setForceFull(String packageName, boolean forceFull) {
+        try {
+            ActivityThread.getPackageManager().setForceFull(packageName, forceFull);
+        } catch (RemoteException e) {
+            throw e.rethrowFromSystemServer();
+        }
+    }
 }

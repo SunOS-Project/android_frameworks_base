@@ -3174,6 +3174,8 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
         serializer.attributeInt(null, "appMetadataSource",
                 pkg.getAppMetadataSource());
 
+        serializer.attributeBoolean(null, "forceFull", pkg.isForceFull());
+
         writeUsesSdkLibLPw(serializer, pkg.getUsesSdkLibraries(),
                 pkg.getUsesSdkLibrariesVersionsMajor(), pkg.getUsesSdkLibrariesOptional());
 
@@ -3284,6 +3286,8 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
         serializer.attributeInt(null, "appMetadataSource",
                 pkg.getAppMetadataSource());
 
+
+        serializer.attributeBoolean(null, "forceFull", pkg.isForceFull());
 
         writeUsesSdkLibLPw(serializer, pkg.getUsesSdkLibraries(),
                 pkg.getUsesSdkLibrariesVersionsMajor(), pkg.getUsesSdkLibrariesOptional());
@@ -3982,6 +3986,7 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
                 .setTargetSdkVersion(targetSdkVersion)
                 .setRestrictUpdateHash(restrictUpdateHash)
                 .setScannedAsStoppedSystemApp(isScannedAsStoppedSystemApp);
+        ps.setForceFull(parser.getAttributeBoolean(null, "forceFull", true));
         long timeStamp = parser.getAttributeLongHex(null, "ft", 0);
         if (timeStamp == 0) {
             timeStamp = parser.getAttributeLong(null, "ts", 0);
@@ -4083,6 +4088,7 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
         byte[] restrictUpdateHash = null;
         boolean isScannedAsStoppedSystemApp = false;
         boolean isSdkLibrary = false;
+        boolean forceFull = true;
         try {
             name = parser.getAttributeValue(null, ATTR_NAME);
             realName = parser.getAttributeValue(null, "realName");
@@ -4102,6 +4108,7 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
             isPendingRestore = parser.getAttributeBoolean(null, "pendingRestore", false);
             loadingProgress = parser.getAttributeFloat(null, "loadingProgress", 0);
             loadingCompletedTime = parser.getAttributeLongHex(null, "loadingCompletedTime", 0);
+            forceFull = parser.getAttributeBoolean(null, "forceFull", true);
 
             if (primaryCpuAbiString == null && legacyCpuAbiString != null) {
                 primaryCpuAbiString = legacyCpuAbiString;
@@ -4281,6 +4288,7 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
                     .setTargetSdkVersion(targetSdkVersion)
                     .setRestrictUpdateHash(restrictUpdateHash)
                     .setScannedAsStoppedSystemApp(isScannedAsStoppedSystemApp);
+            packageSetting.setForceFull(forceFull);
             // Handle legacy string here for single-user mode
             final String enabledStr = parser.getAttributeValue(null, ATTR_ENABLED);
             if (enabledStr != null) {
@@ -5316,6 +5324,7 @@ public final class Settings implements Watchable, Snappable, ResilientAtomicFile
             pw.print(prefix); pw.println("  pendingRestore=true");
         }
         pw.print(prefix); pw.print("  apexModuleName="); pw.println(ps.getApexModuleName());
+        pw.print(prefix); pw.print("  forceFull="); pw.println(String.valueOf(ps.isForceFull()));
 
         if (pkg != null && pkg.getOverlayTarget() != null) {
             pw.print(prefix); pw.print("  overlayTarget="); pw.println(pkg.getOverlayTarget());

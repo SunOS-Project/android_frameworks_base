@@ -259,6 +259,7 @@ final class ScanPackageUtils {
                     isDontKill);
         }
 
+        ForceFullController.getInstance().setMaxAspectRatio(parsedPackage, pkgSetting.isForceFull());
         if (createNewPackage && originalPkgSetting != null) {
             // This is the initial transition from the original package, so,
             // fix up the new package's name now. We must do this after looking

@@ -310,6 +310,15 @@ public class PackageStateMutator {
             return this;
         }
 
+        @NonNull
+        @Override
+        public PackageStateWrite setForceFull(boolean forceFull) {
+            if (mState != null) {
+                mState.setForceFull(forceFull);
+            }
+            return this;
+        }
+
         private static class UserStateWriteWrapper implements PackageUserStateWrite {
 
             @Nullable

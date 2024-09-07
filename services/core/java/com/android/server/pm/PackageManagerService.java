@@ -1795,6 +1795,7 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
 
         m.installAllowlistedSystemPackages();
         IPackageManagerImpl iPackageManager = m.new IPackageManagerImpl();
+        ForceFullController.getInstance().initPms(m, iPackageManager);
         ServiceManager.addService("package", iPackageManager);
         final PackageManagerNative pmn = new PackageManagerNative(m);
         ServiceManager.addService("package_native", pmn);
@@ -6537,6 +6538,16 @@ public class PackageManagerService implements PackageSender, TestUtilityService 
         @Override
         public boolean isAppArchivable(@NonNull String packageName, @NonNull UserHandle user) {
             return mInstallerService.mPackageArchiver.isAppArchivable(packageName, user);
+        }
+
+        @Override
+        public boolean isForceFull(String packageName) {
+            return ForceFullController.getInstance().isForceFull(packageName);
+        }
+
+        @Override
+        public void setForceFull(String packageName, boolean forceFull) {
+            ForceFullController.getInstance().setForceFull(packageName, forceFull);
         }
 
         /**

@@ -121,4 +121,8 @@ public interface PackageStateInternal extends PackageState {
      * @return the source of the app metadata that is currently associated with the given package.
      */
     int getAppMetadataSource();
+
+    boolean isForceFull();
+
+    void setForceFull(boolean forceFull);
 }

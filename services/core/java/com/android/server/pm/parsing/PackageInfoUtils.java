@@ -512,6 +512,7 @@ public class PackageInfoUtils {
             info.category = pkgSetting.getCategoryOverride();
         }
 
+        info.setForceFull(pkgSetting.isForceFull());
         info.seInfo = pkgSetting.getSeInfo();
         info.primaryCpuAbi = pkgSetting.getPrimaryCpuAbi();
         info.secondaryCpuAbi = pkgSetting.getSecondaryCpuAbi();

@@ -146,6 +146,7 @@ import com.android.internal.view.AppearanceRegion;
 import com.android.internal.widget.PointerLocationView;
 import com.android.server.LocalServices;
 import com.android.server.UiThread;
+import com.android.server.pm.ForceFullController;
 import com.android.server.policy.WindowManagerPolicy.NavigationBarPosition;
 import com.android.server.policy.WindowManagerPolicy.ScreenOnListener;
 import com.android.server.policy.WindowManagerPolicy.WindowManagerFuncs;
@@ -1553,6 +1554,15 @@ public class DisplayPolicy {
         // This window might be in the simulated environment.
         // We invoke this to get the proper DisplayFrames.
         displayFrames = win.getDisplayFrames(displayFrames);
+
+        if (win.mActivityRecord != null) {
+            final int cutoutMode = ForceFullController.getInstance().getCutoutMode(
+                    win.mAttrs.layoutInDisplayCutoutMode, win.mActivityRecord.info,
+                    displayFrames.mWidth, displayFrames.mHeight);
+            if (cutoutMode != win.mAttrs.layoutInDisplayCutoutMode) {
+                win.mAttrs.layoutInDisplayCutoutMode = cutoutMode;
+            }
+        }
 
         final WindowManager.LayoutParams attrs = win.mAttrs.forRotation(displayFrames.mRotation);
         sTmpClientFrames.attachedFrame = attached != null ? attached.getFrame() : null;

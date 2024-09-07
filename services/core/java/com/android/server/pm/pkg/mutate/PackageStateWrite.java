@@ -63,4 +63,7 @@ public interface PackageStateWrite {
 
     @NonNull
     PackageStateWrite setUpdateOwner(@Nullable String updateOwnerPackageName);
+
+    @NonNull
+    PackageStateWrite setForceFull(boolean forceFull);
 }

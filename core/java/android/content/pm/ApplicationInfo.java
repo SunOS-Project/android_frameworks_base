@@ -1661,6 +1661,18 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
     @Nullable
     private Set<String> mKnownActivityEmbeddingCerts;
 
+    private boolean mForceFull = true;
+
+    /** @hide */
+    public boolean isForceFull() {
+        return mForceFull;
+    }
+
+    /** @hide */
+    public void setForceFull(boolean forceFull) {
+        mForceFull = forceFull;
+    }
+
     public void dump(Printer pw, String prefix) {
         dump(pw, prefix, DUMP_FLAG_ALL);
     }
@@ -2142,6 +2154,7 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
         dest.writeInt(allowCrossUidActivitySwitchFromBelow ? 1 : 0);
 
         sForStringSet.parcel(mKnownActivityEmbeddingCerts, dest, flags);
+        dest.writeInt(mForceFull ? 1 : 0);
     }
 
     public static final @android.annotation.NonNull Parcelable.Creator<ApplicationInfo> CREATOR
@@ -2247,6 +2260,7 @@ public class ApplicationInfo extends PackageItemInfo implements Parcelable {
         if (mKnownActivityEmbeddingCerts.isEmpty()) {
             mKnownActivityEmbeddingCerts = null;
         }
+        mForceFull = source.readInt() != 0;
     }
 
     /**

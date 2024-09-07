@@ -28,6 +28,8 @@ import static android.hardware.display.ColorDisplayManager.VENDOR_COLOR_MODE_RAN
 
 import static com.android.server.display.color.DisplayTransformManager.LEVEL_COLOR_MATRIX_NIGHT_DISPLAY;
 
+import static org.sun.display.DisplayFeatureManager.CUSTOM_DISPLAY_COLOR_MODE_START;
+
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -189,6 +191,8 @@ public final class ColorDisplayService extends SystemService {
     public ColorDisplayService(Context context) {
         super(context);
         mHandler = new TintHandler(DisplayThread.get().getLooper());
+
+        ColorDisplayServiceExt.getInstance().init(this, mCurrentUser);
     }
 
     @Override
@@ -250,6 +254,7 @@ public final class ColorDisplayService extends SystemService {
         }
 
         mCurrentUser = userHandle;
+        ColorDisplayServiceExt.getInstance().onUserChanged(mCurrentUser);
 
         if (mCurrentUser != UserHandle.USER_NULL) {
             if (!isUserSetupCompleted(cr, mCurrentUser)) {
@@ -373,6 +378,9 @@ public final class ColorDisplayService extends SystemService {
                                 onReduceBrightColorsStrengthLevelChanged();
                                 mHandler.sendEmptyMessage(MSG_APPLY_REDUCE_BRIGHT_COLORS);
                                 break;
+                            default:
+                                ColorDisplayServiceExt.getInstance().onSettingsChanged(setting);
+                                break;
                         }
                     }
                 }
@@ -409,6 +417,7 @@ public final class ColorDisplayService extends SystemService {
                     Secure.getUriFor(Secure.ACCESSIBILITY_DISPLAY_DALTONIZER_SATURATION_LEVEL),
                     false /* notifyForDescendants */, mContentObserver, mCurrentUser);
         }
+        ColorDisplayServiceExt.getInstance().registerContentObserver(mContentObserver);
 
         // Apply the accessibility settings first, since they override most other settings.
         onAccessibilityInversionChanged();
@@ -456,6 +465,8 @@ public final class ColorDisplayService extends SystemService {
                 mHandler.sendEmptyMessage(MSG_APPLY_REDUCE_BRIGHT_COLORS);
             }
         }
+
+        ColorDisplayServiceExt.getInstance().setUp();
     }
 
     private void tearDown() {
@@ -559,6 +570,9 @@ public final class ColorDisplayService extends SystemService {
         if (mode == NOT_SET) {
             return;
         }
+        if (ColorDisplayServiceExt.getInstance().interceptDisplayColorModeChange(mode)) {
+            return;
+        }
 
         mNightDisplayTintController.cancelAnimator();
         mDisplayWhiteBalanceTintController.cancelAnimator();
@@ -577,6 +591,8 @@ public final class ColorDisplayService extends SystemService {
         final DisplayTransformManager dtm = getLocalService(DisplayTransformManager.class);
         dtm.setColorMode(mode, mNightDisplayTintController.getMatrix(),
                 getCompositionColorSpace(mode));
+
+        ColorDisplayServiceExt.getInstance().setColorModeFeature(mode);
 
         if (mDisplayWhiteBalanceTintController.isAvailable(getContext())) {
             updateDisplayWhiteBalanceStatus();
@@ -682,7 +698,7 @@ public final class ColorDisplayService extends SystemService {
      *
      * @param immediate {@code true} skips transition animation
      */
-    private void applyTint(TintController tintController, boolean immediate) {
+    void applyTint(TintController tintController, boolean immediate) {
         tintController.cancelAnimator();
 
         final DisplayTransformManager dtm = getLocalService(DisplayTransformManager.class);
@@ -1054,7 +1070,10 @@ public final class ColorDisplayService extends SystemService {
 
         // This happens when a color mode is no longer available (e.g., after system update or B&R)
         // or the device does not support any color mode.
-        if (!isColorModeAvailable(colorMode)) {
+        final boolean isColorModeAvailable = isColorModeAvailable(colorMode);
+        final int firstCustomColorMode =
+                ColorDisplayServiceExt.getInstance().getFirstCustomColorMode();
+        if (!isColorModeAvailable && firstCustomColorMode == -1) {
             final int[] mappedColorModes = getContext().getResources().getIntArray(
                     R.array.config_mappedColorModes);
             if (colorMode != -1 && mappedColorModes.length > colorMode
@@ -1069,6 +1088,8 @@ public final class ColorDisplayService extends SystemService {
                     colorMode = NOT_SET;
                 }
             }
+        } else if (!isColorModeAvailable && firstCustomColorMode != -1) {
+            return firstCustomColorMode;
         }
 
         return colorMode;
@@ -1090,6 +1111,8 @@ public final class ColorDisplayService extends SystemService {
             return COLOR_MODE_AUTOMATIC;
         } else if (displayColorSetting >= VENDOR_COLOR_MODE_RANGE_MIN
                 && displayColorSetting <= VENDOR_COLOR_MODE_RANGE_MAX) {
+            return displayColorSetting;
+        } else if (displayColorSetting >= CUSTOM_DISPLAY_COLOR_MODE_START) {
             return displayColorSetting;
         } else {
             return -1;
@@ -1723,6 +1746,9 @@ public final class ColorDisplayService extends SystemService {
                 case MSG_APPLY_DISPLAY_WHITE_BALANCE:
                     applyTintByCct(mDisplayWhiteBalanceTintController, false);
                     break;
+                default:
+                    ColorDisplayServiceExt.getInstance().onHandleMessage(msg.what);
+                    break;
             }
         }
     }
@@ -1952,6 +1978,26 @@ public final class ColorDisplayService extends SystemService {
             final long token = Binder.clearCallingIdentity();
             try {
                 return getNightDisplayCustomEndTimeInternal();
+            } finally {
+                Binder.restoreCallingIdentity(token);
+            }
+        }
+
+        @Override
+        public boolean setColorBalanceChannel(int channel, int value) {
+            final long token = Binder.clearCallingIdentity();
+            try {
+                return ColorDisplayServiceExt.getInstance().setColorBalanceChannel(channel, value);
+            } finally {
+                Binder.restoreCallingIdentity(token);
+            }
+        }
+
+        @Override
+        public int getColorBalanceChannel(int channel) {
+            final long token = Binder.clearCallingIdentity();
+            try {
+                return ColorDisplayServiceExt.getInstance().getColorBalanceChannel(channel);
             } finally {
                 Binder.restoreCallingIdentity(token);
             }

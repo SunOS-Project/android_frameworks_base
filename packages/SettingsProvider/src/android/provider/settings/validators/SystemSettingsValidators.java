@@ -31,6 +31,8 @@ import static android.view.PointerIcon.LARGE_POINTER_SCALE;
 import static android.view.PointerIcon.POINTER_ICON_VECTOR_STYLE_FILL_BEGIN;
 import static android.view.PointerIcon.POINTER_ICON_VECTOR_STYLE_FILL_END;
 
+import static org.sun.display.DisplayFeatureManager.CUSTOM_DISPLAY_COLOR_MODE_START;
+
 import android.annotation.Nullable;
 import android.compat.annotation.UnsupportedAppUsage;
 import android.content.ComponentName;
@@ -118,7 +120,9 @@ public class SystemSettingsValidators {
                                             && setting
                                                     <= ColorDisplayManager
                                                             .VENDOR_COLOR_MODE_RANGE_MAX;
-                            return isInFrameworkRange || isInVendorRange;
+                            final boolean isInCustomRange =
+                                    setting >= CUSTOM_DISPLAY_COLOR_MODE_START;
+                            return isInFrameworkRange || isInVendorRange || isInCustomRange;
                         } catch (NumberFormatException | NullPointerException e) {
                             return false;
                         }

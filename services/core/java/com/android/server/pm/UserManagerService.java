@@ -1165,6 +1165,10 @@ public class UserManagerService extends IUserManager.Stub {
         }
     }
 
+    Context getContext() {
+        return mContext;
+    }
+
     /* Prunes out any partially created or partially removed users. */
     private void cleanupPartialUsers() {
         ArrayList<UserInfo> partials = new ArrayList<>();

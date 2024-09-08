@@ -175,6 +175,7 @@ class UserSystemPackageInstaller {
         }
         mWhitelistedPackagesForUserTypes =
                 determineWhitelistedPackagesForUserTypes(SystemConfig.getInstance());
+        UserSystemPackageInstallerExt.getInstance().init(um);
     }
 
     /** Constructor for testing purposes. */
@@ -184,6 +185,7 @@ class UserSystemPackageInstaller {
         mUm = ums;
         mUserTypes = sortedUserTypes;
         mWhitelistedPackagesForUserTypes = whitelist;
+        UserSystemPackageInstallerExt.getInstance().init(ums);
     }
 
     /**
@@ -530,8 +532,9 @@ class UserSystemPackageInstaller {
             if (pkg == null || !packageState.isSystem()) {
                 return;
             }
-            if (shouldInstallPackage(pkg, mWhitelistedPackagesForUserTypes,
-                    whitelistedPackages, implicitlyWhitelist)) {
+            if (!UserSystemPackageInstallerExt.getInstance().interceptInstallPackage(pkg, userType)
+                    && shouldInstallPackage(pkg, mWhitelistedPackagesForUserTypes,
+                            whitelistedPackages, implicitlyWhitelist)) {
                 // Although the allowlist uses manifest names, this function returns packageNames.
                 installPackages.add(pkg.getPackageName());
             }

@@ -103,6 +103,7 @@ import android.widget.Editor;
 
 import com.android.internal.annotations.GuardedBy;
 import com.android.internal.util.Preconditions;
+import com.android.internal.util.sun.DeviceConfigUtils;
 
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -120,6 +121,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+
+import org.sun.provider.SettingsExt;
 
 /**
  * The Settings provider contains global system-level device preferences.
@@ -3435,6 +3438,9 @@ public final class Settings {
                 // This NameValueCache does not support atomically setting multiple flags
                 return SET_ALL_RESULT_FAILURE;
             }
+            if (SettingsExt.interceptSetStringsForPrefix(cr.getPackageName())) {
+                return SET_ALL_RESULT_SUCCESS;
+            }
             try {
                 Bundle args = new Bundle();
                 args.putString(CALL_METHOD_PREFIX_KEY, prefix);
@@ -4178,6 +4184,11 @@ public final class Settings {
         @UnsupportedAppUsage
         public static String getStringForUser(ContentResolver resolver, String name,
                 int userHandle) {
+            final String extResult = SettingsExt.System.hookGetString(resolver.getPackageName(), name);
+            if (extResult != null) {
+                return extResult;
+            }
+
             android.util.SeempLog.record(android.util.SeempLog.getSeempGetApiIdFromValue(name));
             if (MOVED_TO_SECURE.contains(name)) {
                 Log.w(TAG, "Setting " + name + " has moved from android.provider.Settings.System"
@@ -6932,6 +6943,11 @@ public final class Settings {
         @UnsupportedAppUsage
         public static String getStringForUser(ContentResolver resolver, String name,
                 int userHandle) {
+            final String extResult = SettingsExt.Secure.hookGetString(resolver.getPackageName(), name);
+            if (extResult != null) {
+                return extResult;
+            }
+
             if (MOVED_TO_GLOBAL.contains(name)) {
                 Log.w(TAG, "Setting " + name + " has moved from android.provider.Settings.Secure"
                         + " to android.provider.Settings.Global.");
@@ -18009,6 +18025,11 @@ public final class Settings {
         @UnsupportedAppUsage(maxTargetSdk = Build.VERSION_CODES.R, trackingBug = 170729553)
         public static String getStringForUser(ContentResolver resolver, String name,
                 int userHandle) {
+            final String extResult = SettingsExt.Global.hookGetString(resolver.getPackageName(), name);
+            if (extResult != null) {
+                return extResult;
+            }
+
             if (MOVED_TO_SECURE.contains(name)) {
                 Log.w(TAG, "Setting " + name + " has moved from android.provider.Settings.Global"
                         + " to android.provider.Settings.Secure, returning read-only value.");
@@ -20409,6 +20430,9 @@ public final class Settings {
         @RequiresPermission(Manifest.permission.WRITE_DEVICE_CONFIG)
         public static boolean putString(@NonNull String namespace,
                 @NonNull String name, @Nullable String value, boolean makeDefault) {
+            if (DeviceConfigUtils.shouldDenyDeviceConfigControl(namespace, name)) {
+                return true;
+            }
             ContentResolver resolver = getContentResolver();
             return sNameValueCache.putStringForUser(resolver, createCompositeName(namespace, name),
                     value, null, makeDefault, resolver.getUserId(),
@@ -20430,7 +20454,9 @@ public final class Settings {
         public static boolean setStrings(@NonNull String namespace,
                 @NonNull Map<String, String> keyValues)
                 throws DeviceConfig.BadConfigException {
-            return setStrings(getContentResolver(), namespace, keyValues);
+            final boolean result = setStrings(getContentResolver(), namespace, keyValues);
+            DeviceConfigUtils.setDefaultProperties(namespace, null);
+            return result;
         }
 
         /**
@@ -20480,6 +20506,9 @@ public final class Settings {
         @RequiresPermission(Manifest.permission.WRITE_DEVICE_CONFIG)
         public static boolean deleteString(@NonNull String namespace,
                 @NonNull String name) {
+            if (DeviceConfigUtils.shouldDenyDeviceConfigControl(namespace, name)) {
+                return true;
+            }
             ContentResolver resolver = getContentResolver();
             return sNameValueCache.deleteStringForUser(resolver,
                     createCompositeName(namespace, name), resolver.getUserId());
@@ -20516,6 +20545,7 @@ public final class Settings {
             } catch (RemoteException e) {
                 Log.w(TAG, "Can't reset to defaults for " + CONTENT_URI, e);
             }
+            DeviceConfigUtils.setDefaultProperties(null, null);
         }
 
         /**

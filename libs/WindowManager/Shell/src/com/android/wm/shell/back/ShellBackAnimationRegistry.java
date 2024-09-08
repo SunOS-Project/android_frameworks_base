@@ -127,6 +127,22 @@ public class ShellBackAnimationRegistry {
         return runner.isWaitingAnimation();
     }
 
+    boolean isAnimationRunning(@BackNavigationInfo.BackTargetType int type) {
+        BackAnimationRunner runner = mAnimationDefinition.get(type);
+        if (runner == null) {
+            return false;
+        }
+        return runner.isAnimationRunning();
+    }
+
+    void setExtFinishedCallback(@BackNavigationInfo.BackTargetType int type, Runnable callback) {
+        BackAnimationRunner runner = mAnimationDefinition.get(type);
+        if (runner == null) {
+            return;
+        }
+        runner.setExtFinishedCallback(callback);
+    }
+
     void resetDefaultCrossActivity() {
         if (mDefaultCrossActivityAnimation == null
                 || !mAnimationDefinition.contains(BackNavigationInfo.TYPE_CROSS_ACTIVITY)) {

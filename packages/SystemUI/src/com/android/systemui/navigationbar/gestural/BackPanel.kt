@@ -36,6 +36,8 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
     private var arrowBackgroundRect = RectF()
     private var arrowBackgroundPaint = Paint()
 
+    private var drawDoubleArrow = false
+
     // True if the panel is currently on the left of the screen
     var isLeftPanel = false
 
@@ -293,11 +295,24 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
     }
 
     private fun calculateArrowPath(dx: Float, dy: Float): Path {
+        val offset = if (drawDoubleArrow) {
+            arrowPaint.strokeWidth * (if (isLeftPanel) 1 else -1)
+        } else 0.0f
+
         arrowPath.reset()
-        arrowPath.moveTo(dx, -dy)
-        arrowPath.lineTo(0f, 0f)
-        arrowPath.lineTo(dx, dy)
-        arrowPath.moveTo(dx, -dy)
+        if (isLeftPanel) {
+            arrowPath.moveTo(-offset, -dy)
+            arrowPath.lineTo(dx - offset, 0f)
+            arrowPath.lineTo(-offset, dy)
+        } else {
+            arrowPath.moveTo(dx - offset, -dy)
+            arrowPath.lineTo(-offset, 0f)
+            arrowPath.lineTo(dx - offset, dy)
+        }
+        if (drawDoubleArrow) {
+            arrowPath.addPath(arrowPath, offset * 2.0f, 0.0f)
+        }
+
         return arrowPath
     }
 
@@ -453,6 +468,10 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
         verticalTranslation?.let { this.verticalTranslation.spring = it }
     }
 
+    fun setDrawDoubleArrow(enable: Boolean) {
+        drawDoubleArrow = enable
+    }
+
     override fun hasOverlappingRendering() = false
 
     override fun onDraw(canvas: Canvas) {
@@ -509,9 +528,8 @@ class BackPanel(context: Context, private val latencyTracker: LatencyTracker) : 
             }
         }
 
-        val arrowPath = calculateArrowPath(dx = dx, dy = dy)
-        val arrowPaint =
-            arrowPaint.apply { alpha = (255 * min(arrowAlpha.pos, backgroundAlpha.pos)).toInt() }
+        calculateArrowPath(dx = dx, dy = dy)
+        arrowPaint.apply { alpha = (255 * min(arrowAlpha.pos, backgroundAlpha.pos)).toInt() }
         canvas.drawPath(arrowPath, arrowPaint)
         canvas.restore()
 

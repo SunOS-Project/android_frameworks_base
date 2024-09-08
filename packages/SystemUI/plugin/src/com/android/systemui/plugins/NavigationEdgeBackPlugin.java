@@ -54,6 +54,12 @@ public interface NavigationEdgeBackPlugin extends Plugin {
     /** Dumps info about the back gesture plugin. */
     void dump(PrintWriter pw);
 
+    /** Specifies if the arrow animation is shown for back gesture. */
+    default void setBackArrowVisible(boolean visible) {}
+
+    /** Set pending task of triggering action on back gesture long swipe */
+    default void setPendingLongSwipeAction(int action) {}
+
     /** Callback to let the system react to the detected back gestures. */
     interface BackCallback {
         /** Indicates that a Back gesture was recognized and the system should go back. */
@@ -68,5 +74,17 @@ public interface NavigationEdgeBackPlugin extends Plugin {
          * @param triggerBack if back will be triggered in current state.
          */
         void setTriggerBack(boolean triggerBack);
+
+        /**
+         * Sets the extra callback to execute when predictive back gesture animation is finished.
+         *
+         * @param callback the callback to execute when animation is finished.
+         */
+        default void setExtFinishedCallback(Runnable callback) {}
+
+        /** Indicates whether predictive back gesture animation is running. */
+        default boolean isAnimationRunning() {
+            return false;
+        }
     }
 }

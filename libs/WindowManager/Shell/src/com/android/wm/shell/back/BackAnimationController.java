@@ -112,6 +112,8 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
     /** Registry for the back animations */
     private final ShellBackAnimationRegistry mShellBackAnimationRegistry;
 
+    private boolean mBlockGestureForLongSwipe;
+
     @Nullable
     private BackNavigationInfo mBackNavigationInfo;
     private final IActivityTaskManager mActivityTaskManager;
@@ -332,6 +334,11 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
         }
 
         @Override
+        public void setBlockGestureForLongSwipe(boolean block) {
+            mShellExecutor.execute(() -> BackAnimationController.this.setBlockGestureForLongSwipe(block));
+        }
+
+        @Override
         public void setTriggerBack(boolean triggerBack) {
             mShellExecutor.execute(() -> BackAnimationController.this.setTriggerBack(triggerBack));
         }
@@ -356,6 +363,24 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
             mShellExecutor.execute(() -> {
                 mPilferPointerCallback = callback;
             });
+        }
+
+        @Override
+        public void setExtFinishedCallback(Runnable callback) {
+            if (mBackNavigationInfo == null) {
+                return;
+            }
+            final int backType = mBackNavigationInfo.getType();
+            mShellBackAnimationRegistry.setExtFinishedCallback(backType, callback);
+        }
+
+        @Override
+        public boolean isBackAnimationRunning() {
+            if (mBackNavigationInfo == null) {
+                return false;
+            }
+            final int backType = mBackNavigationInfo.getType();
+            return mShellBackAnimationRegistry.isAnimationRunning(backType);
         }
     }
 
@@ -676,6 +701,10 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
         }
     }
 
+    public void setBlockGestureForLongSwipe(boolean block) {
+        mBlockGestureForLongSwipe = block;
+    }
+
     /**
      * Sets to true when the back gesture has passed the triggering threshold, false otherwise.
      */
@@ -716,7 +745,7 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
 
         if (mBackNavigationInfo != null) {
             final IOnBackInvokedCallback callback = mBackNavigationInfo.getOnBackInvokedCallback();
-            if (touchTracker.getTriggerBack()) {
+            if (touchTracker.getTriggerBack() && !mBlockGestureForLongSwipe) {
                 dispatchOnBackInvoked(callback);
             } else {
                 tryDispatchOnBackCancelled(callback);
@@ -798,7 +827,7 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
         mShellExecutor.executeDelayed(mAnimationTimeoutRunnable, MAX_ANIMATION_DURATION);
 
         // The next callback should be {@link #onBackAnimationFinished}.
-        if (mCurrentTracker.getTriggerBack()) {
+        if (mCurrentTracker.getTriggerBack() && !mBlockGestureForLongSwipe) {
             // notify gesture finished
             mBackNavigationInfo.onBackGestureFinished(true);
             dispatchOnBackInvoked(mActiveCallback);
@@ -900,6 +929,7 @@ public class BackAnimationController implements RemoteCallable<BackAnimationCont
             mBackNavigationInfo.onBackNavigationFinished(triggerBack);
             mBackNavigationInfo = null;
         }
+        mBlockGestureForLongSwipe = false;
     }
 
     private void startLatencyTracking() {

@@ -45,6 +45,7 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
         mBgHandler = bgHandler;
         mContext = context;
         mOnChangeRunnable = onChangeRunnable;
+        GestureNavigationSettingsObserverExt.getInstance().init(context);
     }
 
     private final DeviceConfig.OnPropertiesChangedListener mOnPropertiesChangedListener =
@@ -73,6 +74,7 @@ public class GestureNavigationSettingsObserver extends ContentObserver {
             r.registerContentObserver(
                     Settings.Secure.getUriFor(Settings.Secure.USER_SETUP_COMPLETE),
                     false, this, UserHandle.USER_ALL);
+            GestureNavigationSettingsObserverExt.getInstance().register(r, this);
             DeviceConfig.addOnPropertiesChangedListener(
                     DeviceConfig.NAMESPACE_SYSTEMUI,
                     runnable -> mMainHandler.post(runnable),

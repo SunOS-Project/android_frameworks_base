@@ -52,6 +52,12 @@ public class BackAnimationRunner {
     /** True when the back animation is cancelled */
     private boolean mAnimationCancelled;
 
+    /** True when the back animation is running */
+    private boolean mAnimationRunning;
+
+    /** Extra callback to execute when animation is finished */
+    private Runnable mExtFinishedCallback = null;
+
     public BackAnimationRunner(
             @NonNull IOnBackInvokedCallback callback,
             @NonNull IRemoteAnimationRunner runner,
@@ -93,7 +99,12 @@ public class BackAnimationRunner {
                         if (shouldMonitorCUJ(apps)) {
                             InteractionJankMonitorUtils.endTracing(mCujType);
                         }
+                        mAnimationRunning = false;
                         finishedCallback.run();
+                        if (mExtFinishedCallback != null) {
+                            mExtFinishedCallback.run();
+                            mExtFinishedCallback = null;
+                        }
                     }
                 };
         mWaitingAnimation = false;
@@ -104,6 +115,7 @@ public class BackAnimationRunner {
         try {
             getRunner().onAnimationStart(TRANSIT_OLD_UNSET, apps, wallpapers,
                     nonApps, callback);
+            mAnimationRunning = true;
         } catch (RemoteException e) {
             Log.w(TAG, "Failed call onAnimationStart", e);
         }
@@ -126,6 +138,7 @@ public class BackAnimationRunner {
     void cancelAnimation() {
         mWaitingAnimation = false;
         mAnimationCancelled = true;
+        mAnimationRunning = false;
     }
 
     boolean isAnimationCancelled() {
@@ -134,5 +147,13 @@ public class BackAnimationRunner {
 
     void resetWaitingAnimation() {
         mWaitingAnimation = false;
+    }
+
+    boolean isAnimationRunning() {
+        return mAnimationRunning;
+    }
+
+    void setExtFinishedCallback(Runnable callback) {
+        mExtFinishedCallback = callback;
     }
 }

@@ -36,10 +36,13 @@ import androidx.core.view.isVisible
 import androidx.dynamicanimation.animation.DynamicAnimation
 import com.android.internal.jank.Cuj
 import com.android.internal.jank.InteractionJankMonitor
+import com.android.internal.policy.GestureLongSwipeUtils
+import com.android.internal.policy.GestureLongSwipeUtils.ACTION_EMPTY
 import com.android.internal.util.LatencyTracker
 import com.android.systemui.plugins.NavigationEdgeBackPlugin
 import com.android.systemui.statusbar.VibratorHelper
 import com.android.systemui.statusbar.policy.ConfigurationController
+import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.util.ViewController
 import com.android.systemui.util.concurrency.BackPanelUiThread
 import com.android.systemui.util.concurrency.UiThreadContext
@@ -86,13 +89,14 @@ private const val DEBUG = false
 
 class BackPanelController
 internal constructor(
-    context: Context,
+    private val context: Context,
     private val windowManager: WindowManager,
     private val viewConfiguration: ViewConfiguration,
     private val mainHandler: Handler,
     private val systemClock: SystemClock,
     private val vibratorHelper: VibratorHelper,
     private val configurationController: ConfigurationController,
+    private val keyguardStateController: KeyguardStateController,
     latencyTracker: LatencyTracker,
     private val interactionJankMonitor: InteractionJankMonitor,
 ) : ViewController<BackPanel>(BackPanel(context, latencyTracker)), NavigationEdgeBackPlugin {
@@ -112,6 +116,7 @@ internal constructor(
         private val systemClock: SystemClock,
         private val vibratorHelper: VibratorHelper,
         private val configurationController: ConfigurationController,
+        private val keyguardStateController: KeyguardStateController,
         private val latencyTracker: LatencyTracker,
         private val interactionJankMonitor: InteractionJankMonitor,
     ) {
@@ -126,6 +131,7 @@ internal constructor(
                     systemClock,
                     vibratorHelper,
                     configurationController,
+                    keyguardStateController,
                     latencyTracker,
                     interactionJankMonitor
                 )
@@ -179,6 +185,10 @@ internal constructor(
             valueOnSlowVelocity = MAX_DURATION_ENTRY_BEFORE_ACTIVE_ANIMATION,
         )
     }
+
+    private var arrowVisible = true
+
+    private var longSwipeAction = ACTION_EMPTY
 
     // Whether the current gesture has moved a sufficiently large amount,
     // so that we can unambiguously start showing the ENTRY animation
@@ -501,6 +511,7 @@ internal constructor(
         }
 
         updateArrowStateOnMove(yTranslation, xTranslation)
+        mView.setDrawDoubleArrow(longSwipeAction != ACTION_EMPTY)
 
         val gestureProgress =
             when (currentState) {
@@ -667,8 +678,24 @@ internal constructor(
 
     override fun setInsets(insetLeft: Int, insetRight: Int) = Unit
 
+    override fun setBackArrowVisible(visible: Boolean) {
+        arrowVisible = visible
+    }
+
     override fun setBackCallback(callback: NavigationEdgeBackPlugin.BackCallback) {
         backCallback = callback
+    }
+
+    override fun setPendingLongSwipeAction(action: Int) {
+        val wasLongSwipe = longSwipeAction != ACTION_EMPTY
+        if (keyguardStateController.isShowing()) {
+            longSwipeAction = ACTION_EMPTY
+        } else {
+            longSwipeAction = action
+        }
+        if (!wasLongSwipe && longSwipeAction != ACTION_EMPTY) {
+            GestureLongSwipeUtils.playReachedVibration(context)
+        }
     }
 
     override fun setLayoutParams(layoutParams: WindowManager.LayoutParams) {
@@ -909,7 +936,20 @@ internal constructor(
             GestureState.COMMITTED -> {
                 // When flung, trigger back immediately but don't fire again
                 // once state resolves to committed.
-                if (previousState != GestureState.FLUNG) backCallback.triggerBack()
+                if (previousState != GestureState.FLUNG) {
+                    if (longSwipeAction != ACTION_EMPTY) {
+                        backCallback.setTriggerBack(false)
+                        GestureLongSwipeUtils.getTriggerActionRunnable(context, longSwipeAction).let {
+                            if (backCallback.isAnimationRunning()) {
+                                backCallback.setExtFinishedCallback(it)
+                            } else {
+                                it.run()
+                            }
+                        }
+                    } else {
+                        backCallback.triggerBack()
+                    }
+                }
             }
             GestureState.ENTRY,
             GestureState.INACTIVE -> {
@@ -929,7 +969,7 @@ internal constructor(
                 mView.isVisible = false
             }
             GestureState.ENTRY -> {
-                mView.isVisible = true
+                mView.isVisible = arrowVisible
 
                 updateRestingArrowDimens()
                 gestureEntryTime = systemClock.uptimeMillis()

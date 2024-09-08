@@ -20,7 +20,14 @@ import static android.view.InputDevice.SOURCE_MOUSE;
 import static android.view.InputDevice.SOURCE_TOUCHPAD;
 import static android.view.WindowManager.LayoutParams.PRIVATE_FLAG_EXCLUDE_FROM_SCREEN_MAGNIFICATION;
 
+import static com.android.internal.policy.GestureLongSwipeUtils.ACTION_EMPTY;
+import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_1_2;
+import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_1_4;
+import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_3_4;
+import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_FULL;
+
 import static com.android.systemui.Flags.edgebackGestureHandlerGetRunningTasksBackground;
+
 import static com.android.systemui.classifier.Classifier.BACK_GESTURE;
 import static com.android.systemui.navigationbar.gestural.Utilities.isTrackpadScroll;
 import static com.android.systemui.navigationbar.gestural.Utilities.isTrackpadThreeFingerSwipe;
@@ -73,6 +80,7 @@ import androidx.annotation.DimenRes;
 
 import com.android.internal.config.sysui.SystemUiDeviceConfigFlags;
 import com.android.internal.policy.GestureNavigationSettingsObserver;
+import com.android.internal.policy.GestureNavigationSettingsObserverExt;
 import com.android.systemui.dagger.qualifiers.Background;
 import com.android.systemui.model.SysUiState;
 import com.android.systemui.navigationbar.NavigationModeController;
@@ -296,6 +304,17 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private SimpleDateFormat mLogDateFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US);
     private Date mTmpLogDate = new Date();
 
+    private boolean mBackGestureArrowVisible;
+    private int mBackGestureHeightSettings;
+    private int mBackGestureHeight;
+
+    private int mLongSwipeLeftAction;
+    private int mLongSwipeRightAction;
+    private float mLongSwipePortThreshold;
+    private float mLongSwipeLandThreshold;
+    private float mLongSwipeDistance;
+    private boolean mIsLongSwipe;
+
     private final GestureNavigationSettingsObserver mGestureNavigationSettingsObserver;
 
     private final NavigationEdgeBackPlugin.BackCallback mBackCallback =
@@ -334,6 +353,21 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                     if (mBackAnimation != null) {
                         mBackAnimation.setTriggerBack(triggerBack);
                     }
+                }
+
+                @Override
+                public void setExtFinishedCallback(Runnable callback) {
+                    if (mBackAnimation != null) {
+                        mBackAnimation.setExtFinishedCallback(callback);
+                    }
+                }
+
+                @Override
+                public boolean isAnimationRunning() {
+                    if (mBackAnimation != null) {
+                        return mBackAnimation.isBackAnimationRunning();
+                    }
+                    return false;
                 }
             };
 
@@ -511,6 +545,24 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                 && mButtonForcedVisibleCallback != null) {
             mButtonForcedVisibleCallback.accept(mIsButtonForcedVisible);
         }
+
+        mBackGestureArrowVisible = GestureNavigationSettingsObserverExt.getInstance()
+                .isBackGestureArrowVisible();
+        mBackGestureHeightSettings = GestureNavigationSettingsObserverExt.getInstance()
+                .getBackGestureHeightSettings();
+        updateBackGestureHeight();
+
+        mLongSwipeLeftAction = GestureNavigationSettingsObserverExt.getInstance()
+                .getLongSwipeLeftAction();
+        mLongSwipeRightAction = GestureNavigationSettingsObserverExt.getInstance()
+                .getLongSwipeRightAction();
+        mLongSwipePortThreshold = GestureNavigationSettingsObserverExt.getInstance()
+                .getLongSwipePortraitThreshold();
+        mLongSwipeLandThreshold = GestureNavigationSettingsObserverExt.getInstance()
+                .getLongSwipeLandscapeThreshold();
+        mLongSwipeDistance = mDisplaySize.x < mDisplaySize.y ?
+                mDisplaySize.x * mLongSwipePortThreshold :
+                mDisplaySize.x * mLongSwipeLandThreshold;
 
         final DisplayMetrics dm = res.getDisplayMetrics();
         final float defaultGestureHeight = res.getDimension(
@@ -866,6 +918,9 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         if (y >= (mDisplaySize.y - mBottomGestureHeight)) {
             return false;
         }
+        if (y < (mDisplaySize.y - mBottomGestureHeight - mBackGestureHeight)) {
+            return false;
+        }
         // If the point is way too far (twice the margin), it is
         // not interesting to us for logging purposes, nor we
         // should process it.  Simply return false and keep
@@ -1036,6 +1091,7 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             }
             if (mAllowGesture) {
                 mEdgeBackPlugin.setIsLeftPanel(mIsOnLeftEdge);
+                mEdgeBackPlugin.setBackArrowVisible(mBackGestureArrowVisible);
                 mEdgeBackPlugin.onMotionEvent(ev);
                 dispatchToBackAnimation(ev);
             }
@@ -1125,6 +1181,11 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                 }
             }
 
+            if (action == MotionEvent.ACTION_MOVE) {
+                final float deltaX = Math.abs(ev.getX() - mDownPoint.x);
+                setPendingAction(deltaX >= mLongSwipeDistance);
+            }
+
             if (mAllowGesture) {
                 // forward touch
                 mEdgeBackPlugin.onMotionEvent(ev);
@@ -1177,6 +1238,24 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         }
     }
 
+    private void setPendingAction(boolean isLongSwipe) {
+        if (mIsLongSwipe == isLongSwipe) {
+            return;
+        }
+        mIsLongSwipe = isLongSwipe;
+
+        final int action = !isLongSwipe ? ACTION_EMPTY :
+                mIsOnLeftEdge ? mLongSwipeLeftAction : mLongSwipeRightAction;
+
+        if (mEdgeBackPlugin != null) {
+            mEdgeBackPlugin.setPendingLongSwipeAction(action);
+        }
+
+        if (mBackAnimation != null) {
+            mBackAnimation.setBlockGestureForLongSwipe(action != ACTION_EMPTY);
+        }
+    }
+
     private void updateDisabledForQuickstep(Configuration newConfig) {
         int rotation = newConfig.windowConfiguration.getRotation();
         mDisabledForQuickstep = mStartingQuickstepRotation > -1 &&
@@ -1202,6 +1281,9 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private void updateDisplaySize() {
         Rect bounds = mLastReportedConfig.windowConfiguration.getMaxBounds();
         mDisplaySize.set(bounds.width(), bounds.height());
+        mLongSwipeDistance = mDisplaySize.x < mDisplaySize.y ?
+                mDisplaySize.x * mLongSwipePortThreshold :
+                mDisplaySize.x * mLongSwipeLandThreshold;
         if (DEBUG_MISSING_GESTURE) {
             Log.d(DEBUG_MISSING_GESTURE_TAG, "Update display size: mDisplaySize=" + mDisplaySize);
         }
@@ -1210,6 +1292,7 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
             mEdgeBackPlugin.setDisplaySize(mDisplaySize);
         }
         updateBackAnimationThresholds();
+        updateBackGestureHeight();
     }
 
     private void updateBackAnimationThresholds() {
@@ -1219,6 +1302,18 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         int maxDistance = mDisplaySize.x;
         float linearDistance = Math.min(maxDistance, mBackSwipeLinearThreshold);
         mBackAnimation.setSwipeThresholds(linearDistance, maxDistance, mNonLinearFactor);
+    }
+
+    private void updateBackGestureHeight() {
+        if (mBackGestureHeightSettings == GESTURE_HEIGHT_FULL) {
+            mBackGestureHeight = mDisplaySize.y;
+        } else if (mBackGestureHeightSettings == GESTURE_HEIGHT_3_4) {
+            mBackGestureHeight = (int) (mDisplaySize.y * 0.75f);
+        } else if (mBackGestureHeightSettings == GESTURE_HEIGHT_1_2) {
+            mBackGestureHeight = (int) (mDisplaySize.y * 0.5f);
+        } else if (mBackGestureHeightSettings == GESTURE_HEIGHT_1_4) {
+            mBackGestureHeight = (int) (mDisplaySize.y * 0.25f);
+        }
     }
 
     private boolean sendEvent(int action, int code) {

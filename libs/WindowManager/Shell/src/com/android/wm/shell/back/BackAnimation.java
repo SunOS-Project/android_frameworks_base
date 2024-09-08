@@ -54,6 +54,11 @@ public interface BackAnimation {
     void onThresholdCrossed();
 
     /**
+     * Sets whether the back gesture is blocked due to long swipe gesture
+     */
+    void setBlockGestureForLongSwipe(boolean block);
+
+    /**
      * Sets whether the back gesture is past the trigger threshold or not.
      */
     void setTriggerBack(boolean triggerBack);
@@ -107,4 +112,15 @@ public interface BackAnimation {
      * @param pilferCallback the callback to pilfer pointers.
      */
     void setPilferPointerCallback(Runnable pilferCallback);
+
+    /*
+     * Sets the extra callback to execute when predictive back gesture animation is finished.
+     * @param callback the callback to execute when animation is finished.
+     */
+    void setExtFinishedCallback(Runnable callback);
+
+    /**
+     * Return whether predictive back gesture animation is running.
+     */
+    boolean isBackAnimationRunning();
 }

@@ -209,6 +209,7 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
         );
         mRingerModeObservers.init();
         mBroadcastDispatcher = broadcastDispatcher;
+        VolumeDialogControllerImplExt.getInstance().init(this, mContext, mWorker, mAudio, userTracker);
         mObserver.init();
         mReceiver.init();
         mVibrator = vibrator;
@@ -336,6 +337,7 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
                 @Override
                 public void onUserChanged(int newUser, @NonNull Context userContext) {
                     createCaptioningManagerServiceByUserContext(userContext);
+                    VolumeDialogControllerImplExt.getInstance().onUserChanged();
                 }
             };
 
@@ -592,6 +594,7 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
         final StreamState ss = streamStateW(stream);
         if (ss.level == level) return false;
         ss.level = level;
+        VolumeDialogControllerImplExt.getInstance().onUpdateStreamLevel(stream, level);
         if (isLogWorthy(stream)) {
             Events.writeEvent(Events.EVENT_LEVEL_CHANGED, stream, level);
         }
@@ -1165,6 +1168,8 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
         public void init() {
             mContext.getContentResolver().registerContentObserver(ZEN_MODE_URI, false, this);
             mContext.getContentResolver().registerContentObserver(ZEN_MODE_CONFIG_URI, false, this);
+
+            VolumeDialogControllerImplExt.getInstance().onRegisterSettings(this);
         }
 
         public void destroy() {
@@ -1180,6 +1185,8 @@ public class VolumeDialogControllerImpl implements VolumeDialogController, Dumpa
             if (ZEN_MODE_CONFIG_URI.equals(uri)) {
                 changed |= updateZenConfig();
             }
+
+            changed |= VolumeDialogControllerImplExt.getInstance().onSettingsChanged(uri);
 
             if (changed) {
                 mCallbacks.onStateChanged(mState);

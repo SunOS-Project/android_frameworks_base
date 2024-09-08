@@ -98,6 +98,8 @@ import java.util.function.Consumer;
 
 import javax.inject.Provider;
 
+import org.sun.systemui.screenshot.CustomScreenshotController;
+
 /**
  * Controls the state and flow for screenshots.
  */
@@ -126,6 +128,8 @@ public class ScreenshotController implements ScreenshotHandler {
     public static class SavedImageData {
         public Uri uri;
         public List<Notification.Action> smartActions;
+        public Notification.Action deleteAction;
+        public Notification.Action lensAction;
         public Notification.Action quickShareAction;
         public UserHandle owner;
         public String subject;  // Title for sharing
@@ -137,6 +141,8 @@ public class ScreenshotController implements ScreenshotHandler {
         public void reset() {
             uri = null;
             smartActions = null;
+            deleteAction = null;
+            lensAction = null;
             quickShareAction = null;
             subject = null;
             imageTime = null;
@@ -182,10 +188,14 @@ public class ScreenshotController implements ScreenshotHandler {
     public static final String EXTRA_ACTION_INTENT = "android:screenshot_action_intent";
     public static final String EXTRA_ACTION_INTENT_FILLIN =
             "android:screenshot_action_intent_fillin";
+    public static final String SCREENSHOT_URI_ID = "android:screenshot_uri_id";
 
 
     // From WizardManagerHelper.java
     private static final String SETTINGS_SECURE_USER_SETUP_COMPLETE = "user_setup_complete";
+
+    static final String ACTION_TYPE_DELETE = "Delete";
+    static final String ACTION_TYPE_LENS = "Lens";
 
     static final int SCREENSHOT_CORNER_DEFAULT_TIMEOUT_MILLIS = 6000;
 
@@ -217,6 +227,7 @@ public class ScreenshotController implements ScreenshotHandler {
     private final UserManager mUserManager;
     private final AssistContentRequester mAssistContentRequester;
     private final ActionExecutor mActionExecutor;
+    private final CustomScreenshotController mCustomScreenshotController;
 
 
     private final MessageContainerController mMessageContainerController;
@@ -270,6 +281,7 @@ public class ScreenshotController implements ScreenshotHandler {
             ActionExecutor.Factory actionExecutorFactory,
             UserManager userManager,
             AssistContentRequester assistContentRequester,
+            CustomScreenshotController customScreenshotController,
             MessageContainerController messageContainerController,
             Provider<ScreenshotSoundController> screenshotSoundController,
             AnnouncementResolver announcementResolver,
@@ -302,6 +314,7 @@ public class ScreenshotController implements ScreenshotHandler {
         mMessageContainerController = messageContainerController;
         mAssistContentRequester = assistContentRequester;
         mAnnouncementResolver = announcementResolver;
+        mCustomScreenshotController = customScreenshotController;
 
         mViewProxy = viewProxyFactory.getProxy(mContext, mDisplay.getDisplayId());
 
@@ -740,6 +753,9 @@ public class ScreenshotController implements ScreenshotHandler {
     }
 
     private void playCameraSoundIfNeeded() {
+        if (mCustomScreenshotController.interceptPlayCameraSound()) {
+            return;
+        }
         if (mScreenshotSoundController == null) return;
         // the controller is not-null only on the default display controller
         mScreenshotSoundController.playScreenshotSoundAsync();

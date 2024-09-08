@@ -153,6 +153,8 @@ public class ScreenshotView extends FrameLayout implements
     private FrameLayout mDismissButton;
     private OverlayActionChip mShareChip;
     private OverlayActionChip mEditChip;
+    private OverlayActionChip mDeleteChip;
+    private OverlayActionChip mLensChip;
     private OverlayActionChip mScrollChip;
     private OverlayActionChip mQuickShareChip;
 
@@ -176,6 +178,8 @@ public class ScreenshotView extends FrameLayout implements
     private enum PendingInteraction {
         PREVIEW,
         EDIT,
+        DELETE,
+        LENS,
         SHARE,
         QUICK_SHARE
     }
@@ -370,6 +374,8 @@ public class ScreenshotView extends FrameLayout implements
         mScreenshotFlash = requireNonNull(findViewById(R.id.screenshot_flash));
         mShareChip = requireNonNull(mActionsContainer.findViewById(R.id.screenshot_share_chip));
         mEditChip = requireNonNull(mActionsContainer.findViewById(R.id.screenshot_edit_chip));
+        mDeleteChip = requireNonNull(mActionsContainer.findViewById(R.id.screenshot_delete_chip));
+        mLensChip = requireNonNull(mActionsContainer.findViewById(R.id.screenshot_lens_chip));
         mScrollChip = requireNonNull(mActionsContainer.findViewById(R.id.screenshot_scroll_chip));
 
         setFocusable(true);
@@ -672,11 +678,41 @@ public class ScreenshotView extends FrameLayout implements
 
         ArrayList<OverlayActionChip> chips = new ArrayList<>();
 
+        mDeleteChip.setContentDescription(mContext.getString(R.string.screenshot_delete_label));
+        mDeleteChip.setIcon(Icon.createWithResource(mContext, R.drawable.ic_screenshot_delete), true);
+        mDeleteChip.setOnClickListener(v -> {
+            mDeleteChip.setIsPending(true);
+            mEditChip.setIsPending(false);
+            mLensChip.setIsPending(false);
+            mShareChip.setIsPending(false);
+            if (mQuickShareChip != null) {
+                mQuickShareChip.setIsPending(false);
+            }
+            mPendingInteraction = PendingInteraction.DELETE;
+        });
+        chips.add(mDeleteChip);
+
+        mLensChip.setContentDescription(mContext.getString(R.string.google_lens));
+        mLensChip.setIcon(Icon.createWithResource(mContext, R.drawable.ic_screenshot_google_lens), true);
+        mLensChip.setOnClickListener(v -> {
+            mLensChip.setIsPending(true);
+            mShareChip.setIsPending(false);
+            mEditChip.setIsPending(false);
+            mDeleteChip.setIsPending(false);
+            if (mQuickShareChip != null) {
+                mQuickShareChip.setIsPending(false);
+            }
+            mPendingInteraction = PendingInteraction.LENS;
+        });
+        chips.add(mLensChip);
+
         mShareChip.setContentDescription(mContext.getString(R.string.screenshot_share_description));
         mShareChip.setIcon(Icon.createWithResource(mContext, R.drawable.ic_screenshot_share), true);
         mShareChip.setOnClickListener(v -> {
             mShareChip.setIsPending(true);
             mEditChip.setIsPending(false);
+            mDeleteChip.setIsPending(false);
+            mLensChip.setIsPending(false);
             if (mQuickShareChip != null) {
                 mQuickShareChip.setIsPending(false);
             }
@@ -690,6 +726,8 @@ public class ScreenshotView extends FrameLayout implements
                 true);
         mEditChip.setOnClickListener(v -> {
             mEditChip.setIsPending(true);
+            mDeleteChip.setIsPending(false);
+            mLensChip.setIsPending(false);
             mShareChip.setIsPending(false);
             if (mQuickShareChip != null) {
                 mQuickShareChip.setIsPending(false);
@@ -701,6 +739,8 @@ public class ScreenshotView extends FrameLayout implements
         mScreenshotPreview.setOnClickListener(v -> {
             mShareChip.setIsPending(false);
             mEditChip.setIsPending(false);
+            mDeleteChip.setIsPending(false);
+            mLensChip.setIsPending(false);
             if (mQuickShareChip != null) {
                 mQuickShareChip.setIsPending(false);
             }
@@ -792,6 +832,14 @@ public class ScreenshotView extends FrameLayout implements
                     ActionIntentCreator.INSTANCE.createEdit(imageData.uri, mContext),
                     imageData.owner, true);
         });
+        mDeleteChip.setPendingIntent(imageData.deleteAction.actionIntent, () -> {
+            mUiEventLogger.log(ScreenshotEvent.SCREENSHOT_DELETE_TAPPED, 0, mPackageName);
+            animateDismissal();
+        });
+        mLensChip.setPendingIntent(imageData.lensAction.actionIntent, () -> {
+            mUiEventLogger.log(ScreenshotEvent.SCREENSHOT_LENS_TAPPED, 0, mPackageName);
+            animateDismissal();
+        });
         mScreenshotPreview.setOnClickListener(v -> {
             mUiEventLogger.log(ScreenshotEvent.SCREENSHOT_PREVIEW_TAPPED, 0, mPackageName);
             prepareSharedTransition();
@@ -829,6 +877,12 @@ public class ScreenshotView extends FrameLayout implements
                     break;
                 case EDIT:
                     mEditChip.callOnClick();
+                    break;
+                case DELETE:
+                    mDeleteChip.callOnClick();
+                    break;
+                case LENS:
+                    mLensChip.callOnClick();
                     break;
                 case QUICK_SHARE:
                     mQuickShareChip.callOnClick();
@@ -872,6 +926,8 @@ public class ScreenshotView extends FrameLayout implements
             mQuickShareChip.setOnClickListener(v -> {
                 mShareChip.setIsPending(false);
                 mEditChip.setIsPending(false);
+                mDeleteChip.setIsPending(false);
+                mLensChip.setIsPending(false);
                 mQuickShareChip.setIsPending(true);
                 mPendingInteraction = PendingInteraction.QUICK_SHARE;
             });
@@ -1059,8 +1115,12 @@ public class ScreenshotView extends FrameLayout implements
         mShareChip.setOnClickListener(null);
         mScrollingScrim.setVisibility(View.GONE);
         mEditChip.setOnClickListener(null);
+        mDeleteChip.setOnClickListener(null);
+        mLensChip.setOnClickListener(null);
         mShareChip.setIsPending(false);
         mEditChip.setIsPending(false);
+        mDeleteChip.setIsPending(false);
+        mLensChip.setIsPending(false);
         mPendingInteraction = null;
         for (OverlayActionChip chip : mSmartChips) {
             mActionsView.removeView(chip);

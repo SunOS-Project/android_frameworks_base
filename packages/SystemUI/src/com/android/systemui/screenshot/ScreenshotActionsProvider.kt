@@ -23,9 +23,13 @@ import androidx.appcompat.content.res.AppCompatResources
 import com.android.internal.logging.UiEventLogger
 import com.android.systemui.log.DebugLogger.debugLog
 import com.android.systemui.res.R
+import com.android.systemui.screenshot.ActionIntentCreator.createDelete
 import com.android.systemui.screenshot.ActionIntentCreator.createEdit
+import com.android.systemui.screenshot.ActionIntentCreator.createLens
 import com.android.systemui.screenshot.ActionIntentCreator.createShareWithSubject
+import com.android.systemui.screenshot.ScreenshotEvent.SCREENSHOT_DELETE_TAPPED
 import com.android.systemui.screenshot.ScreenshotEvent.SCREENSHOT_EDIT_TAPPED
+import com.android.systemui.screenshot.ScreenshotEvent.SCREENSHOT_LENS_TAPPED
 import com.android.systemui.screenshot.ScreenshotEvent.SCREENSHOT_PREVIEW_TAPPED
 import com.android.systemui.screenshot.ScreenshotEvent.SCREENSHOT_SHARE_TAPPED
 import com.android.systemui.screenshot.ui.viewmodel.ActionButtonAppearance
@@ -126,6 +130,40 @@ constructor(
                     createEdit(result.uri, context),
                     result.user,
                     true
+                )
+            }
+        }
+
+        actionsCallback.provideActionButton(
+            ActionButtonAppearance(
+                AppCompatResources.getDrawable(context, R.drawable.ic_screenshot_delete),
+                context.resources.getString(com.android.internal.R.string.delete),
+                context.resources.getString(com.android.internal.R.string.delete),
+            ),
+            showDuringEntrance = true,
+        ) {
+            debugLog(LogConfig.DEBUG_ACTIONS) { "Delete tapped" }
+            uiEventLogger.log(SCREENSHOT_DELETE_TAPPED, 0, request.packageNameString)
+            onDeferrableActionTapped { result ->
+                actionExecutor.sendPendingIntent(
+                    createDelete(result.uri, context)
+                )
+            }
+        }
+
+        actionsCallback.provideActionButton(
+            ActionButtonAppearance(
+                AppCompatResources.getDrawable(context, R.drawable.ic_screenshot_google_lens),
+                context.resources.getString(R.string.google_lens),
+                context.resources.getString(R.string.google_lens),
+            ),
+            showDuringEntrance = true,
+        ) {
+            debugLog(LogConfig.DEBUG_ACTIONS) { "Lens tapped" }
+            uiEventLogger.log(SCREENSHOT_LENS_TAPPED, 0, request.packageNameString)
+            onDeferrableActionTapped { result ->
+                actionExecutor.sendPendingIntent(
+                    createLens(result.uri, context)
                 )
             }
         }

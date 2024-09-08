@@ -30,9 +30,9 @@ import com.android.systemui.tuner.TunerService.Tunable;
 
 import java.util.Set;
 
-import org.sun.custom.preference.SwitchPreference;
+import org.sun.custom.preference.SwitchPreferenceCompat;
 
-public class StatusBarSwitch extends SwitchPreference implements Tunable {
+public class StatusBarSwitch extends SwitchPreferenceCompat implements Tunable {
 
     private Set<String> mHideList;
 

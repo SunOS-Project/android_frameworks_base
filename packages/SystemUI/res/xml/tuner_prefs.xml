@@ -97,11 +97,6 @@
 
         <!-- secure -->
 
-        <com.android.systemui.tuner.ClockPreference
-            android:title="@string/tuner_time"
-            android:summary="%s"
-            android:entries="@array/clock_options" />
-
         <com.android.systemui.tuner.TunerSwitch
             android:key="low_priority"
             android:title="@string/tuner_low_priority"
@@ -148,10 +143,5 @@
             android:key="plugins"
             android:title="@string/plugins"
             android:fragment="com.android.systemui.tuner.PluginFragment" />
-
-    <!-- Warning, this goes last. -->
-    <Preference
-        android:summary="@string/tuner_persistent_warning"
-        android:selectable="false" />
 
 </PreferenceScreen>

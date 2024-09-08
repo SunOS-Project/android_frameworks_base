@@ -35,7 +35,6 @@ import android.widget.TextView;
 
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragment;
-import androidx.preference.SwitchPreference;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.ViewHolder;
@@ -54,6 +53,8 @@ import com.android.tools.r8.keepanno.annotations.UsesReflection;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.sun.custom.preference.SwitchPreferenceCompat;
 
 public class LockscreenFragment extends PreferenceFragment {
 
@@ -91,7 +92,7 @@ public class LockscreenFragment extends PreferenceFragment {
 
     private void setupGroup(String buttonSetting, String unlockKey) {
         Preference shortcut = findPreference(buttonSetting);
-        SwitchPreference unlock = (SwitchPreference) findPreference(unlockKey);
+        SwitchPreferenceCompat unlock = (SwitchPreferenceCompat) findPreference(unlockKey);
         addTunable((k, v) -> {
             boolean visible = !TextUtils.isEmpty(v);
             unlock.setVisible(visible);

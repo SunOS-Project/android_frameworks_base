@@ -45,7 +45,7 @@ import com.android.systemui.shared.plugins.PluginPrefs;
 import java.util.List;
 import java.util.Set;
 
-import org.sun.custom.preference.SwitchPreference;
+import org.sun.custom.preference.SwitchPreferenceCompat;
 
 public class PluginFragment extends PreferenceFragment {
 
@@ -111,7 +111,7 @@ public class PluginFragment extends PreferenceFragment {
                 // Don't manage privileged plugins, they are part of the OS.
                 return;
             }
-            SwitchPreference pref = new PluginPreference(prefContext, app, mPluginEnabler);
+            SwitchPreferenceCompat pref = new PluginPreference(prefContext, app, mPluginEnabler);
             pref.setSummary("Plugins: " + toString(plugins.get(app.packageName)));
             screen.addPreference(pref);
         });
@@ -149,7 +149,7 @@ public class PluginFragment extends PreferenceFragment {
         }
     };
 
-    private static class PluginPreference extends SwitchPreference {
+    private static class PluginPreference extends SwitchPreferenceCompat {
         private final boolean mHasSettings;
         private final PackageInfo mInfo;
         private final PluginEnabler mPluginEnabler;

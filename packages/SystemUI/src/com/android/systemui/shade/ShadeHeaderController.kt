@@ -323,6 +323,8 @@ constructor(
         mShadeCarrierGroupController =
             shadeCarrierGroupControllerBuilder.setShadeCarrierGroup(mShadeCarrierGroup).build()
 
+        clock.setQsHeader()
+
         privacyIconsController.onParentVisible()
     }
 

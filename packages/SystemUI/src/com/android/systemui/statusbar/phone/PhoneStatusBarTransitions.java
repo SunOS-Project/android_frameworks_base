@@ -33,7 +33,7 @@ public final class PhoneStatusBarTransitions extends BarTransitions {
 
     private boolean mIsHeadsUp;
 
-    private View mStartSide, mStatusIcons, mBattery;
+    private View mStartSide, mStatusIcons, mBattery, mClock, mCenterClock, mRightClock;
     private Animator mCurrentAnimation;
 
     /**
@@ -46,6 +46,9 @@ public final class PhoneStatusBarTransitions extends BarTransitions {
         mStartSide = statusBarView.findViewById(R.id.status_bar_start_side_except_heads_up);
         mStatusIcons = statusBarView.findViewById(R.id.statusIcons);
         mBattery = statusBarView.findViewById(R.id.battery);
+        mClock = statusBarView.findViewById(R.id.clock);
+        mCenterClock = statusBarView.findViewById(R.id.center_clock);
+        mRightClock = statusBarView.findViewById(R.id.right_clock);
         applyModeBackground(-1, getMode(), false /*animate*/);
         applyMode(getMode(), false /*animate*/);
     }
@@ -114,7 +117,10 @@ public final class PhoneStatusBarTransitions extends BarTransitions {
             anims.playTogether(
                     animateTransitionTo(mStartSide, newStartSideAlpha),
                     animateTransitionTo(mStatusIcons, newStatusIconsAlpha),
-                    animateTransitionTo(mBattery, newBatteryAlpha)
+                    animateTransitionTo(mBattery, newBatteryAlpha),
+                    animateTransitionTo(mClock, newBatteryAlpha),
+                    animateTransitionTo(mCenterClock, newBatteryAlpha),
+                    animateTransitionTo(mRightClock, newBatteryAlpha)
                     );
             if (isLightsOut(mode)) {
                 anims.setDuration(LIGHTS_OUT_DURATION);
@@ -125,6 +131,9 @@ public final class PhoneStatusBarTransitions extends BarTransitions {
             mStartSide.setAlpha(newStartSideAlpha);
             mStatusIcons.setAlpha(newStatusIconsAlpha);
             mBattery.setAlpha(newBatteryAlpha);
+            mClock.setAlpha(newBatteryAlpha);
+            mCenterClock.setAlpha(newBatteryAlpha);
+            mRightClock.setAlpha(newBatteryAlpha);
         }
     }
 }

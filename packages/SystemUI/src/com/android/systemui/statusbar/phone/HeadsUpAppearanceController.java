@@ -17,6 +17,7 @@
 package com.android.systemui.statusbar.phone;
 
 import static com.android.systemui.statusbar.phone.fragment.dagger.StatusBarFragmentModule.OPERATOR_NAME_FRAME_VIEW;
+import static com.android.systemui.statusbar.policy.Clock.STYLE_CLOCK_LEFT;
 
 import android.graphics.Rect;
 import android.util.MathUtils;
@@ -272,7 +273,12 @@ public class HeadsUpAppearanceController extends ViewController<HeadsUpStatusBar
                 hide(mClockView, View.INVISIBLE);
                 mOperatorNameViewOptional.ifPresent(view -> hide(view, View.INVISIBLE));
             } else {
-                show(mClockView);
+                Clock clockView = (Clock) mClockView;
+                if (clockView.getClockStyle() == STYLE_CLOCK_LEFT && clockView.getShowClock()) {
+                    show(mClockView);
+                } else {
+                    mClockView.setVisibility(View.GONE);
+                }
                 mOperatorNameViewOptional.ifPresent(this::show);
                 hide(mView, View.GONE, () -> {
                     updateParentClipping(true /* shouldClip */);

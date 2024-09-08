@@ -94,6 +94,7 @@
                         android:layout_gravity="center_vertical"
                         android:textAppearance="@style/TextAppearance.StatusBar.Clock"
                         android:singleLine="true"
+                        android:visibility="gone"
                         android:paddingStart="@dimen/status_bar_left_clock_starting_padding"
                         android:paddingEnd="@dimen/status_bar_left_clock_end_padding"
                         android:gravity="center_vertical|start"
@@ -155,6 +156,37 @@
                      android:layout_height="@dimen/status_bar_system_icons_height" />
             </com.android.keyguard.AlphaOptimizedLinearLayout>
         </FrameLayout>
+
+        <com.android.systemui.statusbar.policy.ClockRight
+            android:id="@+id/right_clock"
+            android:textAppearance="@style/TextAppearance.StatusBar.Clock"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:singleLine="true"
+            android:visibility="gone"
+            android:paddingStart="@dimen/status_bar_right_clock_starting_padding"
+            android:paddingEnd="@dimen/status_bar_clock_end_padding"
+            android:gravity="center_vertical|start"
+            />
     </LinearLayout>
+
+    <com.android.keyguard.AlphaOptimizedLinearLayout
+        android:id="@+id/center_clock_layout"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        >
+        <com.android.systemui.statusbar.policy.ClockCenter
+            android:id="@+id/center_clock"
+            android:textAppearance="@style/TextAppearance.StatusBar.Clock"
+            android:gravity="center"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:paddingTop="@dimen/status_bar_padding_top"
+            android:singleLine="true"
+            />
+    </com.android.keyguard.AlphaOptimizedLinearLayout>
 
 </com.android.systemui.statusbar.phone.PhoneStatusBarView>

@@ -28,6 +28,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.DisplayCutout;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -57,6 +58,8 @@ public class PhoneStatusBarView extends FrameLayout {
 
     private DarkReceiver mBattery;
     private Clock mClock;
+    private Clock mClockCentre;
+    private Clock mClockRight;
     private int mRotationOrientation = -1;
     @Nullable
     private View mCutoutSpace;
@@ -95,6 +98,8 @@ public class PhoneStatusBarView extends FrameLayout {
         super.onFinishInflate();
         mBattery = findViewById(R.id.battery);
         mClock = findViewById(R.id.clock);
+        mClockCentre = findViewById(R.id.center_clock);
+        mClockRight = findViewById(R.id.right_clock);
         mCutoutSpace = findViewById(R.id.cutout_space_view);
 
         updateResources();
@@ -106,6 +111,8 @@ public class PhoneStatusBarView extends FrameLayout {
         // Always have Battery meters in the status bar observe the dark/light modes.
         Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mBattery);
         Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mClock);
+        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mClockCentre);
+        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mClockRight);
         if (updateDisplayParameters()) {
             updateLayoutForCutout();
             if (truncatedStatusBarIconsFix()) {
@@ -119,6 +126,8 @@ public class PhoneStatusBarView extends FrameLayout {
         super.onDetachedFromWindow();
         Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(mBattery);
         Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(mClock);
+        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(mClockCentre);
+        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(mClockRight);
         mDisplayCutout = null;
     }
 
@@ -313,6 +322,13 @@ public class PhoneStatusBarView extends FrameLayout {
                 insets.top,
                 insets.right,
                 getPaddingBottom());
+
+        // Apply negative paddings to centered area layout so that we'll actually be on the center.
+        final int winRotation = getDisplay().getRotation();
+        LayoutParams centeredAreaParams =
+                (LayoutParams) findViewById(R.id.center_clock_layout).getLayoutParams();
+        centeredAreaParams.leftMargin = winRotation == Surface.ROTATION_0 ? - insets.left : 0;
+        centeredAreaParams.rightMargin = winRotation == Surface.ROTATION_0 ? - insets.right : 0;
     }
 
     private void updateWindowHeight() {

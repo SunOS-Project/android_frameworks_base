@@ -14,11 +14,21 @@
 
 package com.android.systemui.statusbar.phone.fragment;
 
+import static com.android.systemui.statusbar.policy.Clock.CLOCK_ENABLED;
+import static com.android.systemui.statusbar.policy.Clock.STYLE_CLOCK_CENTER;
+import static com.android.systemui.statusbar.policy.Clock.STYLE_CLOCK_LEFT;
+import static com.android.systemui.statusbar.policy.Clock.STYLE_CLOCK_RIGHT;
+
+import static org.sun.provider.SettingsExt.System.STATUSBAR_CLOCK;
+import static org.sun.provider.SettingsExt.System.STATUSBAR_CLOCK_STYLE;
+
 import android.annotation.Nullable;
 import android.annotation.SuppressLint;
 import android.app.Fragment;
+import android.content.ContentResolver;
 import android.database.ContentObserver;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Parcelable;
 import android.os.Trace;
 import android.os.UserHandle;
@@ -72,6 +82,7 @@ import com.android.systemui.statusbar.phone.ui.StatusBarIconController;
 import com.android.systemui.statusbar.pipeline.shared.ui.binder.CollapsedStatusBarViewBinder;
 import com.android.systemui.statusbar.pipeline.shared.ui.binder.StatusBarVisibilityChangeListener;
 import com.android.systemui.statusbar.pipeline.shared.ui.viewmodel.CollapsedStatusBarViewModel;
+import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.window.StatusBarWindowStateController;
 import com.android.systemui.statusbar.window.StatusBarWindowStateListener;
@@ -152,6 +163,37 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
     private final NotificationIconContainerStatusBarViewBinder mNicViewBinder;
     private final DemoModeController mDemoModeController;
+
+    private ContentResolver mContentResolver;
+    private SettingsObserver mSettingsObserver;
+
+    private LinearLayout mCenterClockLayout;
+    private View mRightClock;
+    private int mClockStyle;
+    private boolean mShowClock = true;
+
+    private final class SettingsObserver extends ContentObserver {
+
+        SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void register() {
+            mContentResolver.registerContentObserver(Settings.System.getUriFor(
+                    STATUSBAR_CLOCK), false, this, UserHandle.USER_ALL);
+            mContentResolver.registerContentObserver(Settings.System.getUriFor(
+                    STATUSBAR_CLOCK_STYLE), false, this, UserHandle.USER_ALL);
+        }
+
+        void unregister() {
+            mContentResolver.unregisterContentObserver(this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings(true);
+        }
+    }
 
     private List<String> mBlockedIcons = new ArrayList<>();
     private Map<Startable, Startable.State> mStartableStates = new ArrayMap<>();
@@ -354,13 +396,20 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         mEndSideAlphaController = new MultiSourceMinAlphaController(mEndSideContent);
         mClockView = mStatusBar.findViewById(R.id.clock);
         mOngoingActivityChip = mStatusBar.findViewById(R.id.ongoing_activity_chip);
+        mCenterClockLayout = (LinearLayout) mStatusBar.findViewById(R.id.center_clock_layout);
+        mRightClock = mStatusBar.findViewById(R.id.right_clock);
         showEndSideContent(false);
-        showClock(false);
+        animateHide(mClockView, false, false);
         initOperatorName();
         initNotificationIconArea();
         mSystemEventAnimator = getSystemEventAnimator();
         mCarrierConfigTracker.addCallback(mCarrierConfigCallback);
         mCarrierConfigTracker.addDefaultDataSubscriptionChangedListener(mDefaultDataListener);
+
+        mContentResolver = getContext().getContentResolver();
+        mSettingsObserver = new SettingsObserver(new Handler());
+        mSettingsObserver.register();
+        updateSettings(false);
 
         mCollapsedStatusBarViewBinder.bind(
                 mStatusBar, mCollapsedStatusBarViewModel, mStatusBarVisibilityChangeListener);
@@ -378,22 +427,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         // Reload the blocklist from res
         List<String> blockList = Arrays.asList(getResources().getStringArray(
                 R.array.config_collapsed_statusbar_icon_blocklist));
-        String vibrateIconSlot = getString(com.android.internal.R.string.status_bar_volume);
-        boolean showVibrateIcon =
-                mSecureSettings.getIntForUser(
-                        Settings.Secure.STATUS_BAR_SHOW_VIBRATE_ICON,
-                        0,
-                        UserHandle.USER_CURRENT) == 0;
-
-        // Filter out vibrate icon from the blocklist if the setting is on
         for (int i = 0; i < blockList.size(); i++) {
-            if (blockList.get(i).equals(vibrateIconSlot)) {
-                if (showVibrateIcon) {
-                    mBlockedIcons.add(blockList.get(i));
-                }
-            } else {
-                mBlockedIcons.add(blockList.get(i));
-            }
+            mBlockedIcons.add(blockList.get(i));
         }
 
         mMainExecutor.execute(() -> mDarkIconManager.setBlockList(mBlockedIcons));
@@ -441,6 +476,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     @Override
     public void onPause() {
         super.onPause();
+        mSettingsObserver.unregister();
         mCommandQueue.removeCallback(this);
         mStatusBarStateController.removeCallback(this);
         mOngoingCallController.removeCallback(mOngoingCallListener);
@@ -561,17 +597,6 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         if (notifsChanged || ongoingActivityChanged) {
             updateNotificationIconAreaAndOngoingActivityChip(animate);
         }
-
-        // The clock may have already been hidden, but we might want to shift its
-        // visibility to GONE from INVISIBLE or vice versa
-        if (newModel.getShowClock() != previousModel.getShowClock()
-                || mClockView.getVisibility() != clockHiddenMode()) {
-            if (newModel.getShowClock()) {
-                showClock(animate);
-            } else {
-                hideClock(animate);
-            }
-        }
     }
 
     private StatusBarVisibilityModel calculateInternalModel(
@@ -625,8 +650,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         // Hide notifications if the disable flag is set or we have an ongoing activity.
         if (disableNotifications || hasOngoingActivity) {
             hideNotificationIconArea(animate && !hasOngoingActivity);
+            animateHide(mClockView, animate, false);
         } else {
             showNotificationIconArea(animate);
+            updateClockStyle(animate);
         }
 
         // Show the ongoing activity chip only if there is an ongoing activity *and* notification
@@ -698,6 +725,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     }
 
     private void hideEndSideContent(boolean animate) {
+        animateHide(mCenterClockLayout, animate, true);
+        if (mClockStyle == STYLE_CLOCK_RIGHT) {
+            animateHide(mRightClock, animate, true);
+        }
         if (!animate) {
             mEndSideAlphaController.setAlpha(/*alpha*/ 0f, SOURCE_OTHER);
         } else {
@@ -707,6 +738,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     }
 
     private void showEndSideContent(boolean animate) {
+        animateShow(mCenterClockLayout, animate);
+        if (mClockStyle == STYLE_CLOCK_RIGHT) {
+            animateShow(mRightClock, animate);
+        }
         if (!animate) {
             mEndSideAlphaController.setAlpha(1f, SOURCE_OTHER);
             return;
@@ -720,14 +755,6 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
             mEndSideAlphaController.animateToAlpha(/*alpha*/ 1f, SOURCE_OTHER, FADE_IN_DURATION,
                     InterpolatorsAndroidX.ALPHA_IN, FADE_IN_DELAY);
         }
-    }
-
-    private void hideClock(boolean animate) {
-        animateHiddenState(mClockView, clockHiddenMode(), animate);
-    }
-
-    private void showClock(boolean animate) {
-        animateShow(mClockView, animate);
     }
 
     /** Hides the ongoing activity chip. */
@@ -746,24 +773,14 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         animateShow(mOngoingActivityChip, animate);
     }
 
-    /**
-     * If panel is expanded/expanding it usually means QS shade is opening, so
-     * don't set the clock GONE otherwise it'll mess up the animation.
-     */
-    private int clockHiddenMode() {
-        if (!mShadeExpansionStateManager.isClosed() && !mKeyguardStateController.isShowing()
-                && !mStatusBarStateController.isDozing()) {
-            return View.INVISIBLE;
-        }
-        return View.GONE;
-    }
-
     public void hideNotificationIconArea(boolean animate) {
         animateHide(mNotificationIconAreaInner, animate);
+        animateHide(mCenterClockLayout, animate, true);
     }
 
     public void showNotificationIconArea(boolean animate) {
         animateShow(mNotificationIconAreaInner, animate);
+        animateShow(mCenterClockLayout, animate);
     }
 
     public void hideOperatorName(boolean animate) {
@@ -805,9 +822,19 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     }
 
     /**
+     * Hides a view.
+     */
+    private void animateHide(final View v, boolean animate, boolean invisible) {
+        animateHiddenState(v, invisible ? View.INVISIBLE : View.GONE, animate);
+    }
+
+    /**
      * Shows a view, and synchronizes the animation with Keyguard exit animations, if applicable.
      */
     private void animateShow(View v, boolean animate) {
+        if (v instanceof Clock && !((Clock) v).isClockVisible()) {
+            return;
+        }
         v.animate().cancel();
         v.setVisibility(View.VISIBLE);
         if (!animate || !mAnimationsEnabled) {
@@ -889,6 +916,36 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         int rightMargin = mStatusBar.getRight() - right;
 
         mLocationPublisher.updateStatusBarMargin(leftMargin, rightMargin);
+    }
+
+    private void updateSettings(boolean animate) {
+        mShowClock = Settings.System.getIntForUser(mContentResolver,
+                STATUSBAR_CLOCK, CLOCK_ENABLED,
+                UserHandle.USER_CURRENT) == CLOCK_ENABLED;
+        if (!mShowClock) {
+            mClockStyle = STYLE_CLOCK_CENTER;
+        } else {
+            int style = Settings.System.getIntForUser(mContentResolver,
+                    STATUSBAR_CLOCK_STYLE, STYLE_CLOCK_LEFT,
+                    UserHandle.USER_CURRENT);
+            if (style == STYLE_CLOCK_CENTER) {
+                final boolean hasCenteredCutout = getContext().getResources().getBoolean(
+                        com.android.internal.R.bool.config_hasCenteredCutout);
+                if (hasCenteredCutout) {
+                    style = STYLE_CLOCK_LEFT;
+                }
+            }
+            mClockStyle = style;
+        }
+        updateClockStyle(animate);
+    }
+
+    private void updateClockStyle(boolean animate) {
+        if (mClockStyle == STYLE_CLOCK_CENTER || mClockStyle == STYLE_CLOCK_RIGHT) {
+            animateHide(mClockView, animate, false);
+        } else if (((Clock) mClockView).isClockVisible()) {
+            animateShow(mClockView, animate);
+        }
     }
 
     private final ContentObserver mVolumeSettingObserver = new ContentObserver(null) {

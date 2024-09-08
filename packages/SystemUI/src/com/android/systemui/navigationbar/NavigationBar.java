@@ -169,6 +169,9 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.statusbar.phone.NavbarAppearanceChangeCallback;
+import org.sun.systemui.statusbar.phone.NavbarAppearanceController;
+
 /**
  * Contains logic for a navigation bar view.
  */
@@ -204,6 +207,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
     private final PanelExpansionInteractor mPanelExpansionInteractor;
     private final NotificationRemoteInputManager mNotificationRemoteInputManager;
     private final OverviewProxyService mOverviewProxyService;
+    private final NavbarAppearanceController mNavbarAppearanceController;
     private final NavigationModeController mNavigationModeController;
     private final UserTracker mUserTracker;
     private final CommandQueue mCommandQueue;
@@ -262,6 +266,9 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
     private final Optional<TelecomManager> mTelecomManagerOptional;
     private final InputMethodManager mInputMethodManager;
     private final TaskStackChangeListeners mTaskStackChangeListeners;
+
+    private int mFrameHeight = -1;
+    private int mHeight = -1;
 
     @VisibleForTesting
     public int mDisplayId;
@@ -554,6 +561,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
             DeviceProvisionedController deviceProvisionedController,
             MetricsLogger metricsLogger,
             OverviewProxyService overviewProxyService,
+            NavbarAppearanceController navbarAppearanceController,
             NavigationModeController navigationModeController,
             StatusBarStateController statusBarStateController,
             StatusBarKeyguardViewManager statusBarKeyguardViewManager,
@@ -607,6 +615,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         mPanelExpansionInteractor = panelExpansionInteractor;
         mNotificationRemoteInputManager = notificationRemoteInputManager;
         mOverviewProxyService = overviewProxyService;
+        mNavbarAppearanceController = navbarAppearanceController;
         mNavigationModeController = navigationModeController;
         mUserTracker = userTracker;
         mCommandQueue = commandQueue;
@@ -689,6 +698,10 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         mView.setEdgeBackGestureHandler(mEdgeBackGestureHandler);
         mView.setDisplayTracker(mDisplayTracker);
         mNavBarMode = mNavigationModeController.addListener(mModeChangedListener);
+
+        mNavbarAppearanceController.addCallback(mAppearanceChangedCallback);
+        mFrameHeight = mNavbarAppearanceController.getNavbarFrameHeight();
+        mHeight = mNavbarAppearanceController.getNavbarHeight();
     }
 
     public NavigationBarView getView() {
@@ -761,6 +774,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
             } finally {
                 Trace.endSection();
             }
+            mNavbarAppearanceController.removeCallback(mAppearanceChangedCallback);
             mNavigationModeController.removeListener(mModeChangedListener);
             mEdgeBackGestureHandler.setStateChangeCallback(null);
 
@@ -1746,6 +1760,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         int gravity = Gravity.BOTTOM;
         boolean navBarCanMove = true;
         final Context userContext = mUserContextProvider.createCurrentUserContext(mContext);
+        final boolean isGesturalMode = isGesturalMode(mNavBarMode);
         if (mWindowManager != null && mWindowManager.getCurrentWindowMetrics() != null) {
             Rect displaySize = mWindowManager.getCurrentWindowMetrics().getBounds();
             navBarCanMove = displaySize.width() != displaySize.height()
@@ -1755,8 +1770,14 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         if (!navBarCanMove) {
             height = userContext.getResources().getDimensionPixelSize(
                     com.android.internal.R.dimen.navigation_bar_frame_height);
+            if (mFrameHeight != -1 && isGesturalMode) {
+                height = mFrameHeight;
+            }
             insetsHeight = userContext.getResources().getDimensionPixelSize(
                     com.android.internal.R.dimen.navigation_bar_height);
+            if (mHeight != -1 && isGesturalMode) {
+                insetsHeight = mHeight;
+            }
         } else {
             switch (rotation) {
                 case ROTATION_UNDEFINED:
@@ -1764,8 +1785,14 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
                 case Surface.ROTATION_180:
                     height = userContext.getResources().getDimensionPixelSize(
                             com.android.internal.R.dimen.navigation_bar_frame_height);
+                    if (mFrameHeight != -1 && isGesturalMode) {
+                        height = mFrameHeight;
+                    }
                     insetsHeight = userContext.getResources().getDimensionPixelSize(
                             com.android.internal.R.dimen.navigation_bar_height);
+                    if (mHeight != -1 && isGesturalMode) {
+                        insetsHeight = mHeight;
+                    }
                     break;
                 case Surface.ROTATION_90:
                     gravity = Gravity.RIGHT;
@@ -2017,6 +2044,17 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
         }
     }
 
+    private final NavbarAppearanceChangeCallback mAppearanceChangedCallback =
+            new NavbarAppearanceChangeCallback() {
+                @Override
+                public void onNavbarAppearanceChanged(int length, float radius,
+                        int height, int frameHeight, boolean inverseLayout) {
+                    mFrameHeight = frameHeight;
+                    mHeight = height;
+                    repositionNavigationBar(mContext.getDisplay().getRotation());
+                }
+            };
+
     private final ModeChangedListener mModeChangedListener = new ModeChangedListener() {
         @Override
         public void onNavigationModeChanged(int mode) {
@@ -2038,6 +2076,7 @@ public class NavigationBar extends ViewController<NavigationBarView> implements 
                 resetSecondaryHandle();
             }
             mView.setShouldShowSwipeUpUi(mOverviewProxyService.shouldShowSwipeUpUI());
+            repositionNavigationBar(mContext.getDisplay().getRotation());
         }
     };
 

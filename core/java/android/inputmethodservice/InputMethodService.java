@@ -599,7 +599,7 @@ public class InputMethodService extends AbstractInputMethodService {
      * Enable the logic to allow hiding the IME caption bar ("fake" IME navigation bar).
      * @hide
      */
-    public static final boolean ENABLE_HIDE_IME_CAPTION_BAR = true;
+    public static final boolean ENABLE_HIDE_IME_CAPTION_BAR = false;
 
     LayoutInflater mInflater;
     TypedArray mThemeAttrs;

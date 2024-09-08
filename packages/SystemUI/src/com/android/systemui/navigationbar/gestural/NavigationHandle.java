@@ -32,6 +32,8 @@ import android.view.animation.Interpolator;
 
 import com.android.app.animation.Interpolators;
 import com.android.settingslib.Utils;
+import com.android.systemui.Dependency;
+import com.android.systemui.navigationbar.NavigationModeController;
 import com.android.systemui.navigationbar.buttons.ButtonInterface;
 import com.android.systemui.res.R;
 
@@ -40,7 +42,7 @@ public class NavigationHandle extends View implements ButtonInterface {
     protected final Paint mPaint = new Paint();
     private @ColorInt final int mLightColor;
     private @ColorInt final int mDarkColor;
-    protected final float mRadius;
+    protected float mRadius;
     protected final float mBottom;
     private final float mAdditionalWidthForAnimation;
     private final float mAdditionalHeightForAnimation;
@@ -63,6 +65,8 @@ public class NavigationHandle extends View implements ButtonInterface {
                     controller.setPulseAnimationProgress(progress);
                 }
             };
+
+    private final NavigationModeController mController;
 
     public NavigationHandle(Context context) {
         this(context, null);
@@ -88,6 +92,8 @@ public class NavigationHandle extends View implements ButtonInterface {
         mDarkColor = Utils.getColorAttrDefaultColor(darkContext, R.attr.homeHandleColor);
         mPaint.setAntiAlias(true);
         setFocusable(false);
+
+        mController = Dependency.get(NavigationModeController.class);
     }
 
     @Override
@@ -115,6 +121,7 @@ public class NavigationHandle extends View implements ButtonInterface {
             additionalWidth = mAdditionalWidthForAnimation * mPulseAnimationProgress;
         }
 
+        mRadius = mController.getAppearanceController().getNavbarRadius();
         float height = mRadius * 2 + additionalHeight;
         float width = getWidth() + additionalWidth;
         float x = -additionalWidth;

@@ -50,6 +50,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.statusbar.phone.NavbarAppearanceController;
+
 /**
  * Controller for tracking the current navigation bar mode.
  */
@@ -67,6 +69,7 @@ public class NavigationModeController implements Dumpable {
     private Context mCurrentUserContext;
     private final IOverlayManager mOverlayManager;
     private final Executor mUiBgExecutor;
+    private final NavbarAppearanceController mNavbarAppearanceController;
     private final UserTracker mUserTracker;
 
     private ArrayList<ModeChangedListener> mListeners = new ArrayList<>();
@@ -100,12 +103,14 @@ public class NavigationModeController implements Dumpable {
     @Inject
     public NavigationModeController(Context context,
             ConfigurationController configurationController,
+            NavbarAppearanceController navbarAppearanceController,
             UserTracker userTracker,
             @Main Executor mainExecutor,
             @UiBackground Executor uiBgExecutor,
             DumpManager dumpManager) {
         mContext = context;
         mCurrentUserContext = context;
+        mNavbarAppearanceController = navbarAppearanceController;
         mUserTracker = userTracker;
         mUserTracker.addCallback(mUserTrackerCallback, mainExecutor);
         mOverlayManager = IOverlayManager.Stub.asInterface(
@@ -163,6 +168,10 @@ public class NavigationModeController implements Dumpable {
     public boolean getImeDrawsImeNavBar() {
         return mCurrentUserContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_imeDrawsImeNavBar);
+    }
+
+    public NavbarAppearanceController getAppearanceController() {
+        return mNavbarAppearanceController;
     }
 
     private int getCurrentInteractionMode(Context context) {

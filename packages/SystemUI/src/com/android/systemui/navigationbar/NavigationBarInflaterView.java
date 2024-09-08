@@ -48,6 +48,9 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
 
+import org.sun.systemui.statusbar.phone.NavbarAppearanceChangeCallback;
+import org.sun.systemui.statusbar.phone.NavbarAppearanceController;
+
 public class NavigationBarInflaterView extends FrameLayout {
     private static final String TAG = "NavBarInflater";
 
@@ -119,12 +122,45 @@ public class NavigationBarInflaterView extends FrameLayout {
     private OverviewProxyService mOverviewProxyService;
     private int mNavBarMode = NAV_BAR_MODE_3BUTTON;
 
+    private final NavbarAppearanceController mNavbarAppearanceController;
+    private int mBarLength = -1;
+    private int mBarFrameHeight = -1;
+    private int mBarHeight = -1;
+    private boolean mInverseLayout = false;
+
+    private final NavbarAppearanceChangeCallback mAppearanceChangedCallback =
+            new NavbarAppearanceChangeCallback() {
+                @Override
+                public void onNavbarAppearanceChanged(int length, float radius,
+                        int height, int frameHeight, boolean inverseLayout) {
+                    mBarLength = length;
+                    mBarFrameHeight = frameHeight;
+                    mBarHeight = height;
+                    if (mInverseLayout != inverseLayout) {
+                        mInverseLayout = inverseLayout;
+                        updateLayoutInversion();
+                    }
+                    if (QuickStepContract.isGesturalMode(mNavBarMode)) {
+                        clearViews();
+                        inflateLayout(getDefaultLayout());
+                    }
+                }
+            };
+
     public NavigationBarInflaterView(Context context, AttributeSet attrs) {
         super(context, attrs);
         createInflaters();
         mOverviewProxyService = Dependency.get(OverviewProxyService.class);
         mListener = new Listener(this);
         mNavBarMode = Dependency.get(NavigationModeController.class).addListener(mListener);
+
+        mNavbarAppearanceController = Dependency.get(NavigationModeController.class).getAppearanceController();
+        mNavbarAppearanceController.addCallback(mAppearanceChangedCallback);
+        mBarLength = mNavbarAppearanceController.getNavbarLength();
+        mBarFrameHeight = mNavbarAppearanceController.getNavbarFrameHeight();
+        mBarHeight = mNavbarAppearanceController.getNavbarHeight();
+        mInverseLayout = mNavbarAppearanceController.isInverseLayoutEnabled();
+        updateLayoutInversion();
     }
 
     @VisibleForTesting
@@ -144,6 +180,12 @@ public class NavigationBarInflaterView extends FrameLayout {
         inflateLayout(getDefaultLayout());
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updateLayoutInversion();
+    }
+
     private void inflateChildren() {
         removeAllViews();
         mHorizontal = (FrameLayout) mLayoutInflater.inflate(R.layout.navigation_layout,
@@ -161,6 +203,9 @@ public class NavigationBarInflaterView extends FrameLayout {
                 : mOverviewProxyService.shouldShowSwipeUpUI()
                         ? R.string.config_navBarLayoutQuickstep
                         : R.string.config_navBarLayout;
+        if (mBarLength == 0 && defaultResource == R.string.config_navBarLayoutHandle) {
+            return getContext().getString(defaultResource).replace(HOME_HANDLE, "");
+        }
         return getContext().getString(defaultResource);
     }
 
@@ -170,6 +215,7 @@ public class NavigationBarInflaterView extends FrameLayout {
 
     @Override
     protected void onDetachedFromWindow() {
+        mNavbarAppearanceController.removeCallback(mAppearanceChangedCallback);
         Dependency.get(NavigationModeController.class).removeListener(mListener);
         super.onDetachedFromWindow();
     }
@@ -189,6 +235,14 @@ public class NavigationBarInflaterView extends FrameLayout {
         for (int i = 0; i < buttonDispatchers.size(); i++) {
             initiallyFill(buttonDispatchers.valueAt(i));
         }
+    }
+
+    int getNavbarFrameHeight() {
+        return mBarFrameHeight;
+    }
+
+    int getNavbarHeight() {
+        return mBarHeight;
     }
 
     void updateButtonDispatchersCurrentView() {
@@ -224,6 +278,19 @@ public class NavigationBarInflaterView extends FrameLayout {
     private void updateAlternativeOrder(View v) {
         if (v instanceof ReverseLinearLayout) {
             ((ReverseLinearLayout) v).setAlternativeOrder(mAlternativeOrder);
+        }
+    }
+
+    private void updateLayoutInversion() {
+        if (mInverseLayout) {
+            final Configuration config = mContext.getResources().getConfiguration();
+            if (config.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL) {
+                setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+            } else {
+                setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            }
+        } else {
+            setLayoutDirection(View.LAYOUT_DIRECTION_INHERIT);
         }
     }
 
@@ -402,6 +469,11 @@ public class NavigationBarInflaterView extends FrameLayout {
             v = inflater.inflate(R.layout.contextual, parent, false);
         } else if (HOME_HANDLE.equals(button)) {
             v = inflater.inflate(R.layout.home_handle, parent, false);
+            if (mBarLength > 0) {
+                final ViewGroup.LayoutParams lp = v.getLayoutParams();
+                lp.width = mBarLength;
+                v.setLayoutParams(lp);
+            }
         } else if (IME_SWITCHER.equals(button)) {
             v = inflater.inflate(R.layout.ime_switcher, parent, false);
         } else if (button.startsWith(KEY)) {

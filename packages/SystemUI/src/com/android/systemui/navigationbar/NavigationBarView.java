@@ -599,9 +599,13 @@ public class NavigationBarView extends FrameLayout {
 
         updateRecentsIcon();
 
+        final boolean imeBottomSpaceHidden =
+                mNavigationInflaterView.getNavbarFrameHeight() != -1
+                && isGesturalMode(mNavBarMode);
+
         // Update IME button visibility, a11y and rotate button always overrides the appearance
-        boolean disableImeSwitcher =
-                (mNavigationIconHints & StatusBarManager.NAVIGATION_HINT_IME_SWITCHER_SHOWN) == 0
+        boolean disableImeSwitcher = imeBottomSpaceHidden
+                || (mNavigationIconHints & StatusBarManager.NAVIGATION_HINT_IME_SWITCHER_SHOWN) == 0
                 || isImeRenderingNavButtons();
         mContextualButtonGroup.setButtonVisibility(R.id.ime_switcher, !disableImeSwitcher);
 
@@ -617,7 +621,8 @@ public class NavigationBarView extends FrameLayout {
         boolean disableHomeHandle = disableRecent
                 && ((mDisabledFlags & View.STATUS_BAR_DISABLE_HOME) != 0);
 
-        boolean disableBack = !useAltBack && (mEdgeBackGestureHandler.isHandlingGestures()
+        boolean disableBack = imeBottomSpaceHidden
+                || !useAltBack && (mEdgeBackGestureHandler.isHandlingGestures()
                 || ((mDisabledFlags & View.STATUS_BAR_DISABLE_BACK) != 0))
                 || isImeRenderingNavButtons();
 
@@ -982,8 +987,14 @@ public class NavigationBarView extends FrameLayout {
                             com.android.internal.R.dimen.navigation_bar_height_landscape)
                     : getResources().getDimensionPixelSize(
                             com.android.internal.R.dimen.navigation_bar_height);
+            if (mNavigationInflaterView.getNavbarHeight() != -1) {
+                height = mNavigationInflaterView.getNavbarHeight();
+            }
             int frameHeight = getResources().getDimensionPixelSize(
                     com.android.internal.R.dimen.navigation_bar_frame_height);
+            if (mNavigationInflaterView.getNavbarFrameHeight() != -1) {
+                frameHeight = mNavigationInflaterView.getNavbarFrameHeight();
+            }
             mBarTransitions.setBackgroundFrame(new Rect(0, frameHeight - height, w, h));
         } else {
             mBarTransitions.setBackgroundFrame(null);

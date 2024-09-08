@@ -271,6 +271,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 
 import org.sun.systemui.shade.CustomGestureListener;
+import org.sun.systemui.statusbar.phone.EdgeLightViewController;
 
 @SysUISingleton
 public final class NotificationPanelViewController implements ShadeSurface, Dumpable {
@@ -644,6 +645,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private boolean mForceFlingAnimationForTest = false;
 
     private final CustomGestureListener mCustomGestureListener;
+    private final EdgeLightViewController mEdgeLightViewController;
     private final GestureDetector mDoubleTapGesture;
     private final SplitShadeStateController mSplitShadeStateController;
     private final Runnable mFlingCollapseRunnable = () -> fling(0, false /* expand */,
@@ -803,6 +805,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             ActiveNotificationsInteractor activeNotificationsInteractor,
             CustomGestureListener customGestureListener,
             HeadsUpNotificationInteractor headsUpNotificationInteractor,
+            EdgeLightViewController edgeLightViewController,
             EmergencyButtonController.Factory emergencyButtonControllerFactory,
             ShadeAnimationInteractor shadeAnimationInteractor,
             KeyguardViewConfigurator keyguardViewConfigurator,
@@ -933,6 +936,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         mPulseExpansionHandler = pulseExpansionHandler;
         mCustomGestureListener = customGestureListener;
         mDozeParameters = dozeParameters;
+        mEdgeLightViewController = edgeLightViewController;
         mScrimController = scrimController;
         mUserManager = userManager;
         mMediaDataManager = mediaDataManager;
@@ -1109,6 +1113,8 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
 
         mNotificationContainerParent = mView.findViewById(R.id.notification_container_parent);
         updateViewControllers(userAvatarContainer, keyguardUserSwitcherView);
+
+        mEdgeLightViewController.setEdgeLightView(mView.findViewById(R.id.edge_light_container));
 
         mNotificationStackScrollLayoutController.setOnHeightChangedListener(
                 new NsslHeightChangedListener());

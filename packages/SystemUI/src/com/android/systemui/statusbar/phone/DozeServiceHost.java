@@ -65,6 +65,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.statusbar.phone.EdgeLightViewController;
+
 /**
  * Implementation of DozeHost for SystemUI.
  */
@@ -96,6 +98,7 @@ public final class DozeServiceHost implements DozeHost {
     private final Lazy<BiometricUnlockController> mBiometricUnlockControllerLazy;
     private final Lazy<AssistManager> mAssistManagerLazy;
     private final DozeScrimController mDozeScrimController;
+    private final EdgeLightViewController mEdgeLightViewController;
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
     private final PulseExpansionHandler mPulseExpansionHandler;
     private final NotificationShadeWindowController mNotificationShadeWindowController;
@@ -120,6 +123,7 @@ public final class DozeServiceHost implements DozeHost {
             ScrimController scrimController,
             Lazy<BiometricUnlockController> biometricUnlockControllerLazy,
             Lazy<AssistManager> assistManagerLazy,
+            EdgeLightViewController edgeLightViewController,
             DozeScrimController dozeScrimController, KeyguardUpdateMonitor keyguardUpdateMonitor,
             PulseExpansionHandler pulseExpansionHandler,
             NotificationShadeWindowController notificationShadeWindowController,
@@ -140,6 +144,7 @@ public final class DozeServiceHost implements DozeHost {
         mBiometricUnlockControllerLazy = biometricUnlockControllerLazy;
         mAssistManagerLazy = assistManagerLazy;
         mDozeScrimController = dozeScrimController;
+        mEdgeLightViewController = edgeLightViewController;
         mKeyguardUpdateMonitor = keyguardUpdateMonitor;
         mPulseExpansionHandler = pulseExpansionHandler;
         mNotificationShadeWindowController = notificationShadeWindowController;
@@ -309,6 +314,7 @@ public final class DozeServiceHost implements DozeHost {
                     mKeyguardUpdateMonitor.onAuthInterruptDetected(pulsing /* active */);
                 }
                 mCentralSurfaces.updateScrimController();
+                mEdgeLightViewController.setPulsing(pulsing, reason);
                 mPulseExpansionHandler.setPulsing(pulsing);
                 mNotificationWakeUpCoordinator.setPulsing(pulsing);
             }

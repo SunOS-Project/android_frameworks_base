@@ -44,6 +44,7 @@ import com.android.wm.shell.bubbles.Bubbles
 import dagger.Lazy
 import java.util.Optional
 import javax.inject.Inject
+import org.sun.systemui.statusbar.phone.EdgeLightViewController
 
 /**
  * Master controller for all notifications-related work
@@ -58,6 +59,7 @@ class NotificationsControllerImpl
 constructor(
     private val notificationListener: NotificationListener,
     private val commonNotifCollection: Lazy<CommonNotifCollection>,
+    private val edgeLightViewController: EdgeLightViewController,
     private val notifPipeline: Lazy<NotifPipeline>,
     private val notifLiveDataStore: NotifLiveDataStore,
     private val targetSdkResolver: TargetSdkResolver,
@@ -110,6 +112,7 @@ constructor(
                 logger.setUpWithContainer(listContainer)
             }
         }
+        edgeLightViewController.attach(notificationListener)
         peopleSpaceWidgetManager.attach(notificationListener)
     }
 

@@ -107,6 +107,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.sun.provider.SettingsExt;
+import org.sun.systemui.statusbar.phone.EdgeLightViewController;
 
 /**
  * Controls the application of theme overlays across the system for all users.
@@ -124,6 +125,7 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
 
     private static final String OVERLAY_PURE_BLACK_THEME = "com.android.system.theme.black";
 
+    private final EdgeLightViewController mEdgeLightViewController;
     private final ThemeOverlayApplier mThemeManager;
     private final UserManager mUserManager;
     private final BroadcastDispatcher mBroadcastDispatcher;
@@ -406,6 +408,7 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
             @Background Handler bgHandler,
             @Main Executor mainExecutor,
             @Background Executor bgExecutor,
+            EdgeLightViewController edgeLightViewController,
             ThemeOverlayApplier themeOverlayApplier,
             SecureSettings secureSettings,
             SystemSettings systemSettings,
@@ -430,6 +433,7 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         mBgExecutor = bgExecutor;
         mMainExecutor = mainExecutor;
         mBgHandler = bgHandler;
+        mEdgeLightViewController = edgeLightViewController;
         mThemeManager = themeOverlayApplier;
         mSecureSettings = secureSettings;
         mSystemSettings = systemSettings;
@@ -593,6 +597,8 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         }
 
         updateThemeOverlays();
+
+        mEdgeLightViewController.updateColor();
     }
 
     /**

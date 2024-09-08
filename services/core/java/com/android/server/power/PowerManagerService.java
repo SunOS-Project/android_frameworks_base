@@ -507,7 +507,7 @@ public final class PowerManagerService extends SystemService
     private boolean mDecoupleHalInteractiveModeFromDisplayConfig;
 
     // True if the device should wake up when plugged or unplugged.
-    private boolean mWakeUpWhenPluggedOrUnpluggedConfig;
+    private boolean mWakeUpWhenPluggedOrUnpluggedSetting;
 
     // True if the device should wake up when plugged or unplugged in theater mode.
     private boolean mWakeUpWhenPluggedOrUnpluggedInTheaterModeConfig;
@@ -1491,6 +1491,9 @@ public final class PowerManagerService extends SystemService
         resolver.registerContentObserver(Settings.Global.getUriFor(
                 Settings.Global.DEVICE_DEMO_MODE),
                 false, mSettingsObserver, UserHandle.USER_SYSTEM);
+        resolver.registerContentObserver(Settings.Global.getUriFor(
+                SettingsExt.Global.WAKE_WHEN_PLUGGED_OR_UNPLUGGED),
+                false, mSettingsObserver, UserHandle.USER_ALL);
 
         // Register for broadcasts from other components of the system.
         IntentFilter filter = new IntentFilter();
@@ -1521,8 +1524,6 @@ public final class PowerManagerService extends SystemService
                 com.android.internal.R.bool.config_powerDecoupleAutoSuspendModeFromDisplay);
         mDecoupleHalInteractiveModeFromDisplayConfig = resources.getBoolean(
                 com.android.internal.R.bool.config_powerDecoupleInteractiveModeFromDisplay);
-        mWakeUpWhenPluggedOrUnpluggedConfig = resources.getBoolean(
-                com.android.internal.R.bool.config_unplugTurnsOnScreen);
         mWakeUpWhenPluggedOrUnpluggedInTheaterModeConfig = resources.getBoolean(
                 com.android.internal.R.bool.config_allowTheaterModeWakeFromUnplug);
         mSuspendWhenScreenOffDueToProximityConfig = resources.getBoolean(
@@ -1592,6 +1593,8 @@ public final class PowerManagerService extends SystemService
                 Settings.Global.STAY_ON_WHILE_PLUGGED_IN, BatteryManager.BATTERY_PLUGGED_AC);
         mTheaterModeEnabled = Settings.Global.getInt(mContext.getContentResolver(),
                 Settings.Global.THEATER_MODE_ON, 0) == 1;
+        mWakeUpWhenPluggedOrUnpluggedSetting = Settings.Global.getInt(resolver,
+                SettingsExt.Global.WAKE_WHEN_PLUGGED_OR_UNPLUGGED, 1) == 1;
         mAlwaysOnEnabled = mAmbientDisplayConfiguration.alwaysOnEnabled(UserHandle.USER_CURRENT);
 
         if (mSupportsDoubleTapWakeConfig) {
@@ -2692,7 +2695,7 @@ public final class PowerManagerService extends SystemService
     private boolean shouldWakeUpWhenPluggedOrUnpluggedLocked(
             boolean wasPowered, int oldPlugType, boolean dockedOnWirelessCharger) {
         // Don't wake when powered unless configured to do so.
-        if (!mWakeUpWhenPluggedOrUnpluggedConfig) {
+        if (!mWakeUpWhenPluggedOrUnpluggedSetting) {
             return false;
         }
 
@@ -4743,8 +4746,6 @@ public final class PowerManagerService extends SystemService
                     + mDecoupleHalAutoSuspendModeFromDisplayConfig);
             pw.println("  mDecoupleHalInteractiveModeFromDisplayConfig="
                     + mDecoupleHalInteractiveModeFromDisplayConfig);
-            pw.println("  mWakeUpWhenPluggedOrUnpluggedConfig="
-                    + mWakeUpWhenPluggedOrUnpluggedConfig);
             pw.println("  mWakeUpWhenPluggedOrUnpluggedInTheaterModeConfig="
                     + mWakeUpWhenPluggedOrUnpluggedInTheaterModeConfig);
             pw.println("  mTheaterModeEnabled="
@@ -5051,10 +5052,6 @@ public final class PowerManagerService extends SystemService
                     PowerServiceSettingsAndConfigurationDumpProto
                             .IS_DECOUPLE_HAL_INTERACTIVE_MODE_FROM_DISPLAY_CONFIG,
                     mDecoupleHalInteractiveModeFromDisplayConfig);
-            proto.write(
-                    PowerServiceSettingsAndConfigurationDumpProto
-                            .IS_WAKE_UP_WHEN_PLUGGED_OR_UNPLUGGED_CONFIG,
-                    mWakeUpWhenPluggedOrUnpluggedConfig);
             proto.write(
                     PowerServiceSettingsAndConfigurationDumpProto
                             .IS_WAKE_UP_WHEN_PLUGGED_OR_UNPLUGGED_IN_THEATER_MODE_CONFIG,

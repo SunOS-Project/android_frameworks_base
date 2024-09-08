@@ -7629,6 +7629,10 @@ public final class ViewRootImpl implements ViewParent,
         private int processPointerEvent(QueuedInputEvent q) {
             final MotionEvent event = (MotionEvent)q.mEvent;
 
+            if (mImplExt.processPointerEvent(event)) {
+                return FINISH_HANDLED;
+            }
+
             // Translate the pointer event for compatibility, if needed.
             if (mTranslator != null) {
                 mTranslator.translateEventInScreenToAppWindow(event);

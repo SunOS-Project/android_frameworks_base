@@ -940,6 +940,37 @@ public class StatusBarManagerService extends IStatusBarService.Stub implements D
     }
 
     @Override
+    public void toggleCameraFlash() {
+        if (mBar != null) {
+            try {
+                mBar.toggleCameraFlash();
+            } catch (RemoteException ex) {
+            }
+        }
+    }
+
+    @Override
+    public void toggleQuickSettingsPanel() {
+        enforceExpandStatusBar();
+        if (mBar != null) {
+            try {
+                mBar.toggleQuickSettingsPanel();
+            } catch (RemoteException ex) {
+            }
+        }
+    }
+
+    @Override
+    public void startActivityDismissingKeyguard(Intent intent) {
+        if (mBar != null) {
+            try {
+                mBar.startActivityDismissingKeyguard(intent);
+            } catch (RemoteException ex) {
+            }
+        }
+    }
+
+    @Override
     public void togglePanel() {
         if (!checkCanCollapseStatusBar("togglePanel")) {
             return;

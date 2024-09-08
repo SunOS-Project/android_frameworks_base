@@ -168,14 +168,23 @@ private constructor(
 
     /** Called when a touch event occurred on {@link PhoneStatusBarView}. */
     fun onTouch(event: MotionEvent) {
+        if (CentralSurfacesImplExt.getInstance().isBrightnessControlEnabled()) {
+            CentralSurfacesImplExt.getInstance().interceptForBrightnessControl(event)
+            if (!centralSurfaces.commandQueuePanelsEnabled) return
+        }
+
+        val upOrCancel =
+            event.action == MotionEvent.ACTION_UP ||
+                event.action == MotionEvent.ACTION_CANCEL
+
         if (statusBarWindowStateController.windowIsShowing()) {
-            val upOrCancel =
-                event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL
             centralSurfaces.setInteracting(
                 WINDOW_STATUS_BAR,
                 !upOrCancel || shadeController.isExpandedVisible
             )
         }
+
+        CentralSurfacesImplExt.getInstance().checkBrightnessChanged(upOrCancel)
     }
 
     inner class PhoneStatusBarViewTouchHandler : Gefingerpoken {
@@ -199,6 +208,12 @@ private constructor(
                         )
                     )
                 }
+                return false
+            }
+
+            // If user is sliding status bar for brightness control, ignore the gesture
+            // and don't pass it down to the panel view.
+            if (CentralSurfacesImplExt.getInstance().isInBrightnessControl()) {
                 return false
             }
 

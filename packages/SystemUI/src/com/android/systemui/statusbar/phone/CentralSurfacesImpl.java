@@ -201,6 +201,7 @@ import com.android.systemui.statusbar.PowerButtonReveal;
 import com.android.systemui.statusbar.PulseExpansionHandler;
 import com.android.systemui.statusbar.StatusBarState;
 import com.android.systemui.statusbar.SysuiStatusBarStateController;
+import com.android.systemui.statusbar.VibratorHelper;
 import com.android.systemui.statusbar.core.StatusBarInitializer;
 import com.android.systemui.statusbar.data.model.StatusBarMode;
 import com.android.systemui.statusbar.data.repository.StatusBarModeRepositoryStore;
@@ -222,6 +223,7 @@ import com.android.systemui.statusbar.policy.ConfigurationController.Configurati
 import com.android.systemui.statusbar.policy.DeviceProvisionedController;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController.DeviceProvisionedListener;
 import com.android.systemui.statusbar.policy.ExtensionController;
+import com.android.systemui.statusbar.policy.FlashlightController;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.policy.UserInfoControllerImpl;
@@ -456,6 +458,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private final MessageRouter mMessageRouter;
     private final WallpaperManager mWallpaperManager;
     private final UserTracker mUserTracker;
+    private final VibratorHelper mVibratorHelper;
     private final Provider<FingerprintManager> mFingerprintManager;
     private final ActivityStarter mActivityStarter;
 
@@ -543,6 +546,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     private boolean mIsLaunchingActivityOverLockscreen;
     private boolean mDismissingShadeForActivityLaunch;
 
+    private final FlashlightController mFlashlightController;
     private final LifecycleRegistry mLifecycle = new LifecycleRegistry(this);
     protected final BatteryController mBatteryController;
     private UiModeManager mUiModeManager;
@@ -606,6 +610,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     @Inject
     public CentralSurfacesImpl(
             Context context,
+            FlashlightController flashlightController,
             NotificationsController notificationsController,
             FragmentService fragmentService,
             LightBarController lightBarController,
@@ -705,6 +710,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             LightRevealScrim lightRevealScrim,
             AlternateBouncerInteractor alternateBouncerInteractor,
             UserTracker userTracker,
+            VibratorHelper vibratorHelper,
             Provider<FingerprintManager> fingerprintManager,
             ActivityStarter activityStarter,
             BrightnessMirrorShowingInteractor brightnessMirrorShowingInteractor,
@@ -712,6 +718,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             EmergencyGestureIntentFactory emergencyGestureIntentFactory
     ) {
         mContext = context;
+        mFlashlightController = flashlightController;
         mNotificationsController = notificationsController;
         mFragmentService = fragmentService;
         mLightBarController = lightBarController;
@@ -801,6 +808,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mCameraLauncherLazy = cameraLauncherLazy;
         mAlternateBouncerInteractor = alternateBouncerInteractor;
         mUserTracker = userTracker;
+        mVibratorHelper = vibratorHelper;
         mFingerprintManager = fingerprintManager;
         mActivityStarter = activityStarter;
         mBrightnessMirrorShowingInteractor = brightnessMirrorShowingInteractor;
@@ -1154,6 +1162,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     // Constructing the view
     // ================================================================================
     protected void makeStatusBarView(@Nullable RegisterStatusBarResult result) {
+        CentralSurfacesImplExt.getInstance().init(this, mContext,
+                mDisplayId, mMessageRouter, mStatusBarWindowController, mVibratorHelper);
+
         updateDisplaySize(); // populates mDisplayMetrics
         updateResources();
         updateTheme();
@@ -1821,6 +1832,10 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             mLightBarController.dump(pw, args);
         }
 
+        if (mFlashlightController != null) {
+            mFlashlightController.dump(pw, args);
+        }
+
         pw.println("SharedPreferences:");
         for (Map.Entry<String, ?> entry : Prefs.getAll(mContext).entrySet()) {
             pw.print("  "); pw.print(entry.getKey()); pw.print("="); pw.println(entry.getValue());
@@ -1926,6 +1941,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
      * meantime, just update the things that we know change.
      */
     void updateResources() {
+        CentralSurfacesImplExt.getInstance().updateResources();
+
         // Update the quick setting tiles
         if (mQSPanelController != null) {
             mQSPanelController.updateResources();
@@ -2943,6 +2960,18 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 e.printStackTrace();
             }
         });
+    }
+
+    protected void toggleCameraFlash() {
+        mCommandQueueCallbacks.toggleCameraFlash();
+    }
+
+    protected void toggleQuickSettingsPanel() {
+        mCommandQueueCallbacks.toggleQuickSettingsPanel();
+    }
+
+    protected void startActivityDismissingKeyguard(Intent intent) {
+        mCommandQueueCallbacks.startActivityDismissingKeyguard(intent);
     }
 
     protected void toggleKeyboardShortcuts(int deviceId) {

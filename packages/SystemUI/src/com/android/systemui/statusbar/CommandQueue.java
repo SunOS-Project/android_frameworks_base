@@ -31,6 +31,7 @@ import android.app.StatusBarManager.WindowType;
 import android.app.StatusBarManager.WindowVisibleState;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.hardware.biometrics.BiometricAuthenticator.Modality;
 import android.hardware.biometrics.IBiometricContextListener;
@@ -181,6 +182,8 @@ public class CommandQueue extends IStatusBar.Stub implements
     private static final int MSG_ENTER_DESKTOP = 80 << MSG_SHIFT;
     private static final int MSG_SET_SPLITSCREEN_FOCUS = 81 << MSG_SHIFT;
     private static final int MSG_TOGGLE_QUICK_SETTINGS_PANEL = 82 << MSG_SHIFT;
+    private static final int MSG_TOGGLE_CAMERA_FLASH = 101 << MSG_SHIFT;
+    private static final int MSG_START_ACTIVITY_DISMISS_KEYGUARD = 102 << MSG_SHIFT;
     public static final int FLAG_EXCLUDE_NONE = 0;
     public static final int FLAG_EXCLUDE_SEARCH_PANEL = 1 << 0;
     public static final int FLAG_EXCLUDE_RECENTS_PANEL = 1 << 1;
@@ -557,6 +560,10 @@ public class CommandQueue extends IStatusBar.Stub implements
          * @see IStatusBar#moveFocusedTaskToDesktop(int)
          */
         default void moveFocusedTaskToDesktop(int displayId) {}
+
+        default void toggleCameraFlash() {}
+
+        default void startActivityDismissingKeyguard(Intent intent) {}
     }
 
     @VisibleForTesting
@@ -1483,6 +1490,27 @@ public class CommandQueue extends IStatusBar.Stub implements
         mHandler.obtainMessage(MSG_ENTER_DESKTOP, args).sendToTarget();
     }
 
+    @Override
+    public void toggleCameraFlash() {
+        synchronized (mLock) {
+            if (mHandler.hasMessages(MSG_TOGGLE_CAMERA_FLASH)) {
+                mHandler.removeMessages(MSG_TOGGLE_CAMERA_FLASH);
+            }
+            mHandler.sendEmptyMessage(MSG_TOGGLE_CAMERA_FLASH);
+        }
+    }
+
+    @Override
+    public void startActivityDismissingKeyguard(Intent intent) {
+        synchronized (mLock) {
+            if (mHandler.hasMessages(MSG_START_ACTIVITY_DISMISS_KEYGUARD)) {
+                mHandler.removeMessages(MSG_START_ACTIVITY_DISMISS_KEYGUARD);
+            }
+            mHandler.obtainMessage(MSG_START_ACTIVITY_DISMISS_KEYGUARD, intent)
+                    .sendToTarget();
+        }
+    }
+
     private final class H extends Handler {
         private H(Looper l) {
             super(l);
@@ -2004,6 +2032,13 @@ public class CommandQueue extends IStatusBar.Stub implements
                     }
                     break;
                 }
+                case MSG_TOGGLE_CAMERA_FLASH:
+                    mCallbacks.forEach(cb -> cb.toggleCameraFlash());
+                    break;
+                case MSG_START_ACTIVITY_DISMISS_KEYGUARD:
+                    Intent intent = (Intent) msg.obj;
+                    mCallbacks.forEach(cb -> cb.startActivityDismissingKeyguard(intent));
+                    break;
             }
         }
     }

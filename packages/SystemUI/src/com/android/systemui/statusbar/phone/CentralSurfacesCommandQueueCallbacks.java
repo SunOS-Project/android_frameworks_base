@@ -65,6 +65,7 @@ import com.android.systemui.shade.domain.interactor.ShadeInteractor;
 import com.android.systemui.statusbar.CommandQueue;
 import com.android.systemui.statusbar.notification.stack.NotificationStackScrollLayoutController;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController;
+import com.android.systemui.statusbar.policy.FlashlightController;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.policy.RemoteInputQuickSettingsDisabler;
@@ -94,6 +95,7 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
     private final HeadsUpManager mHeadsUpManager;
     private final WakefulnessLifecycle mWakefulnessLifecycle;
     private final DeviceProvisionedController mDeviceProvisionedController;
+    private final FlashlightController mFlashlightController;
     private final StatusBarKeyguardViewManager mStatusBarKeyguardViewManager;
     private final AssistManager mAssistManager;
     private final DozeServiceHost mDozeServiceHost;
@@ -136,6 +138,7 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
             HeadsUpManager headsUpManager,
             WakefulnessLifecycle wakefulnessLifecycle,
             DeviceProvisionedController deviceProvisionedController,
+            FlashlightController flashlightController,
             StatusBarKeyguardViewManager statusBarKeyguardViewManager,
             AssistManager assistManager,
             DozeServiceHost dozeServiceHost,
@@ -165,6 +168,7 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
         mHeadsUpManager = headsUpManager;
         mWakefulnessLifecycle = wakefulnessLifecycle;
         mDeviceProvisionedController = deviceProvisionedController;
+        mFlashlightController = flashlightController;
         mStatusBarKeyguardViewManager = statusBarKeyguardViewManager;
         mAssistManager = assistManager;
         mDozeServiceHost = dozeServiceHost;
@@ -513,6 +517,18 @@ public class CentralSurfacesCommandQueueCallbacks implements CommandQueue.Callba
         } else {
             mShadeController.animateExpandQs();
         }
+    }
+
+    @Override
+    public void toggleCameraFlash() {
+        if (mFlashlightController.isAvailable()) {
+            mFlashlightController.setFlashlight(!mFlashlightController.isEnabled());
+        }
+    }
+
+    @Override
+    public void startActivityDismissingKeyguard(Intent intent) {
+        mActivityStarter.postStartActivityDismissingKeyguard(intent, 0, null);
     }
 
     private boolean isGoingToSleep() {

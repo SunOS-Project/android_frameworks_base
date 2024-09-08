@@ -18,6 +18,7 @@ package com.android.internal.statusbar;
 
 import android.app.Notification;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.graphics.Rect;
 import android.hardware.biometrics.IBiometricContextListener;
@@ -230,4 +231,13 @@ interface IStatusBarService
 
     /** Shows rear display educational dialog */
     void showRearDisplayDialog(int currentBaseState);
+
+    /** Toggle device flashlight */
+    void toggleCameraFlash();
+
+    /** Toggle QuickSettings Panel */
+    void toggleQuickSettingsPanel();
+
+    /** Dismiss keyguard and start activity */
+    void startActivityDismissingKeyguard(in Intent intent);
 }

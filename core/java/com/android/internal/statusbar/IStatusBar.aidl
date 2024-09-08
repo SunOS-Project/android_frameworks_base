@@ -18,6 +18,7 @@ package com.android.internal.statusbar;
 
 import android.app.ITransientNotificationCallback;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.graphics.Rect;
 import android.hardware.biometrics.IBiometricContextListener;
@@ -396,4 +397,13 @@ oneway interface IStatusBar
     * @param displayId the id of the current display.
     */
     void moveFocusedTaskToDesktop(int displayId);
+
+    /** Toggle device flashlight */
+    void toggleCameraFlash();
+
+    /** Toggle QuickSettings Panel */
+    void toggleQuickSettingsPanel();
+
+    /** Dismiss keyguard and start activity */
+    void startActivityDismissingKeyguard(in Intent intent);
 }

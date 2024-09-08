@@ -23,6 +23,8 @@ import static android.view.Display.Mode.INVALID_MODE_ID;
 
 import static com.android.server.display.DisplayDeviceConfig.DEFAULT_LOW_REFRESH_RATE;
 
+import static org.sun.os.DebugConstants.DEBUG_DISPLAY_RR;
+
 import android.annotation.IntegerRes;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -103,6 +105,9 @@ import java.util.concurrent.Callable;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 
+import org.sun.display.IRefreshRateListener;
+import org.sun.display.RefreshRateManager;
+import org.sun.provider.SettingsExt;
 import org.sun.server.wm.DisplayResolutionController;
 
 /**
@@ -141,6 +146,7 @@ public class DisplayModeDirector {
 
     @Nullable
     private final SystemRequestObserver mSystemRequestObserver;
+    private final RefreshRateObserver mRefreshRateObserver;
     private final DeviceConfigParameterProvider mConfigParameterProvider;
     private final DeviceConfigDisplaySettings mDeviceConfigDisplaySettings;
 
@@ -243,6 +249,7 @@ public class DisplayModeDirector {
         mDisplayObserver = new DisplayObserver(context, handler, mVotesStorage, injector);
         mSensorObserver = new ProximitySensorObserver(mVotesStorage, injector);
         mSkinThermalStatusObserver = new SkinThermalStatusObserver(injector, mVotesStorage);
+        mRefreshRateObserver = new RefreshRateObserver(injector, mVotesStorage);
         mHbmObserver = new HbmObserver(injector, mVotesStorage, BackgroundThread.getHandler(),
                 mDeviceConfigDisplaySettings);
         if (displayManagerFlags.isRestrictDisplayModesEnabled()) {
@@ -286,6 +293,7 @@ public class DisplayModeDirector {
         // UDFPS observer registers a listener with SystemUI which might not be ready until the
         // system is fully booted.
         mUdfpsObserver.observe();
+        mRefreshRateObserver.observe();
     }
 
     /**
@@ -954,6 +962,8 @@ public class DisplayModeDirector {
                 Settings.Global.getUriFor(Settings.Global.LOW_POWER_MODE);
         private final Uri mMatchContentFrameRateSetting =
                 Settings.Secure.getUriFor(Settings.Secure.MATCH_CONTENT_FRAME_RATE);
+        private final Uri mLowPowerRefreshRateSetting =
+                Settings.Global.getUriFor(SettingsExt.Global.LOW_POWER_REFRESH_RATE);
 
         private final boolean mVsyncLowPowerVoteEnabled;
         private final boolean mPeakRefreshRatePhysicalLimitEnabled;
@@ -1025,6 +1035,8 @@ public class DisplayModeDirector {
                     UserHandle.USER_SYSTEM);
             cr.registerContentObserver(mMatchContentFrameRateSetting, false /*notifyDescendants*/,
                     this);
+            cr.registerContentObserver(mLowPowerRefreshRateSetting, false /*notifyDescendants*/, this,
+                    UserHandle.USER_SYSTEM);
             mInjector.registerDisplayListener(mDisplayListener, mHandler);
 
             float deviceConfigDefaultPeakRefresh =
@@ -1065,7 +1077,8 @@ public class DisplayModeDirector {
             synchronized (mLock) {
                 if (mPeakRefreshRateSetting.equals(uri) || mMinRefreshRateSetting.equals(uri)) {
                     updateRefreshRateSettingLocked();
-                } else if (mLowPowerModeSetting.equals(uri)) {
+                } else if (mLowPowerModeSetting.equals(uri)
+                        || mLowPowerRefreshRateSetting.equals(uri)) {
                     updateLowPowerModeSettingLocked();
                 } else if (mMatchContentFrameRateSetting.equals(uri)) {
                     updateModeSwitchingTypeSettingLocked();
@@ -1107,8 +1120,10 @@ public class DisplayModeDirector {
         private void updateLowPowerModeSettingLocked() {
             mIsLowPower = Settings.Global.getInt(mContext.getContentResolver(),
                     Settings.Global.LOW_POWER_MODE, 0 /*default*/) != 0;
+            final boolean shouldSwitchRefreshRate = Settings.Global.getInt(mContext.getContentResolver(),
+                    SettingsExt.Global.LOW_POWER_REFRESH_RATE, 1 /*default*/) != 0;
             final Vote vote;
-            if (mIsLowPower) {
+            if (mIsLowPower && shouldSwitchRefreshRate) {
                 vote = Vote.forRenderFrameRates(0f, 60f);
             } else {
                 vote = null;
@@ -2892,6 +2907,48 @@ public class DisplayModeDirector {
         }
     }
 
+    private final class RefreshRateObserver extends IRefreshRateListener.Stub {
+        private final Injector mInjector;
+        private final VotesStorage mVotesStorage;
+
+        RefreshRateObserver(Injector injector, VotesStorage votesStorage) {
+            mInjector = injector;
+            mVotesStorage = votesStorage;
+        }
+
+        @Override
+        public void onRequestedRefreshRate(int refreshRate) {
+            if (DEBUG_DISPLAY_RR) {
+                Slog.d(TAG, "New requested refresh rate: " + refreshRate);
+            }
+            final Vote vote;
+            if (refreshRate > 0) {
+                vote = Vote.forRenderFrameRates((float) refreshRate, (float) refreshRate);
+            } else {
+                vote = null;
+            }
+            mVotesStorage.updateGlobalVote(Vote.PRIORITY_USER_PREFERRED, vote);
+        }
+
+        @Override
+        public void onRequestedMemcRefreshRate(int refreshRate) {
+            if (DEBUG_DISPLAY_RR) {
+                Slog.d(TAG, "New requested memc refresh rate: " + refreshRate);
+            }
+            final Vote vote;
+            if (refreshRate > 0) {
+                vote = Vote.forRenderFrameRates((float) refreshRate, (float) refreshRate);
+            } else {
+                vote = null;
+            }
+            mVotesStorage.updateGlobalVote(Vote.PRIORITY_MEMC, vote);
+        }
+
+        public void observe() {
+            mInjector.registerRefreshRateListener(this);
+        }
+    }
+
     private class DeviceConfigDisplaySettings implements DeviceConfig.OnPropertiesChangedListener {
         public void startListening() {
             mConfigParameterProvider.addOnPropertiesChangedListener(
@@ -3021,12 +3078,15 @@ public class DisplayModeDirector {
 
         @Nullable
         VotesStatsReporter getVotesStatsReporter(boolean refreshRateVotingTelemetryEnabled);
+
+        void registerRefreshRateListener(IRefreshRateListener.Stub listener);
     }
 
     @VisibleForTesting
     static class RealInjector implements Injector {
         private final Context mContext;
         private DisplayManager mDisplayManager;
+        private RefreshRateManager mRefreshRateManager;
 
         RealInjector(Context context) {
             mContext = context;
@@ -3160,11 +3220,28 @@ public class DisplayModeDirector {
                     refreshRateVotingTelemetryEnabled);
         }
 
+        @Override
+        public void registerRefreshRateListener(IRefreshRateListener.Stub listener) {
+            final RefreshRateManager manager = getRefreshRateManager();
+            if (manager == null) {
+                Slog.e(TAG, "Could not register refresh rate listener. RefreshRateManager is not available");
+                return;
+            }
+            manager.registerRefreshRateListener(listener);
+        }
+
         private DisplayManager getDisplayManager() {
             if (mDisplayManager == null) {
                 mDisplayManager = mContext.getSystemService(DisplayManager.class);
             }
             return mDisplayManager;
+        }
+
+        private RefreshRateManager getRefreshRateManager() {
+            if (mRefreshRateManager == null) {
+                mRefreshRateManager = mContext.getSystemService(RefreshRateManager.class);
+            }
+            return mRefreshRateManager;
         }
 
         private IThermalService getThermalService() {

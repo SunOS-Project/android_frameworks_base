@@ -258,6 +258,7 @@ public class MediaSessionService extends SystemService implements Monitor {
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mNotificationListener = new NotificationListener();
+        MediaSessionServiceExt.getInstance().init(mContext, mHandler);
     }
 
     @Override
@@ -323,6 +324,7 @@ public class MediaSessionService extends SystemService implements Monitor {
                         // Intra-process call, should never happen.
                     }
                 }
+                MediaSessionServiceExt.getInstance().onBootCompleted();
                 break;
             case PHASE_ACTIVITY_MANAGER_READY:
                 MediaSessionDeviceConfig.initialize(mContext);
@@ -2529,7 +2531,8 @@ public class MediaSessionService extends SystemService implements Monitor {
                             + ". flags=" + flags + ", preferSuggestedStream="
                             + preferSuggestedStream + ", session=" + session);
                 }
-                if (musicOnly && !AudioSystem.isStreamActive(AudioManager.STREAM_MUSIC, 0)) {
+                if (musicOnly && !AudioSystem.isStreamActive(AudioManager.STREAM_MUSIC, 0)
+                        && !MediaSessionServiceExt.getInstance().isAdaptivePlaybackEnabled()) {
                     if (DEBUG_KEY_EVENT) {
                         Log.d(TAG, "Nothing is playing on the music stream. Skipping volume event,"
                                 + " flags=" + flags);

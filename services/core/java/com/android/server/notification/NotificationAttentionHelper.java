@@ -404,7 +404,8 @@ public final class NotificationAttentionHelper {
         }
 
         if (aboveThreshold && isNotificationForCurrentUser(record, signals)) {
-            if (mSystemReady && mAudioManager != null) {
+            if (mSystemReady && mAudioManager != null &&
+                    !NotificationManagerServiceExt.getInstance().shouldSkipSoundVib()) {
                 Uri soundUri = record.getSound();
                 hasValidSound = soundUri != null && !Uri.EMPTY.equals(soundUri);
                 VibrationEffect vibration = record.getVibration();
@@ -417,6 +418,11 @@ public final class NotificationAttentionHelper {
                         AudioAttributes.toLegacyStreamType(record.getAudioAttributes())) == 0) {
                     boolean insistent = (record.getFlags() & Notification.FLAG_INSISTENT) != 0;
                     vibration = mVibratorHelper.createFallbackVibration(insistent);
+                    NotificationManagerServiceExt.getInstance().setNeedUpdateVibration();
+                }
+                if (NotificationManagerServiceExt.getInstance().checkNeedUpdateVibrationAndReset()
+                        || vibration != null) {
+                    vibration = NotificationManagerServiceExt.getInstance().getVibrationEffect();
                 }
                 hasValidVibrate = vibration != null;
                 // Vibration-only if unlocked and Settings flag set
@@ -1743,6 +1749,10 @@ public final class NotificationAttentionHelper {
     @VisibleForTesting
     void setVibratorHelper(VibratorHelper helper) {
         mVibratorHelper = helper;
+    }
+
+    boolean getScreenOn() {
+        return mScreenOn;
     }
 
     @VisibleForTesting

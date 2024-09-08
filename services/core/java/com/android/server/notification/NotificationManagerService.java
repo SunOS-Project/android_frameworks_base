@@ -884,6 +884,10 @@ public class NotificationManagerService extends SystemService {
         }
     }
 
+    boolean getScreenOn() {
+        return mAttentionHelper.getScreenOn();
+    }
+
     void loadDefaultApprovedServices(int userId) {
         mListeners.loadDefaultsFromConfig();
 
@@ -2143,6 +2147,8 @@ public class NotificationManagerService extends SystemService {
             resolver.registerContentObserver(SHOW_NOTIFICATION_SNOOZE,
                     false, this, USER_ALL);
 
+            NotificationManagerServiceExt.getInstance().observe(this);
+
             update(null);
         }
 
@@ -2188,6 +2194,7 @@ public class NotificationManagerService extends SystemService {
                     unsnoozeAll();
                 }
             }
+            NotificationManagerServiceExt.getInstance().updateSettings(uri);
         }
 
         public void update(Uri uri, int userId) {
@@ -2270,6 +2277,8 @@ public class NotificationManagerService extends SystemService {
         mNotificationRecordLogger = notificationRecordLogger;
         mNotificationInstanceIdSequence = notificationInstanceIdSequence;
         Notification.processAllowlistToken = ALLOWLIST_TOKEN;
+
+        NotificationManagerServiceExt.getInstance().init(this);
     }
 
     // TODO - replace these methods with new fields in the VisibleForTesting constructor

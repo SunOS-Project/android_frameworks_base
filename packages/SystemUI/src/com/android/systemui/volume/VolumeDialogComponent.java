@@ -36,6 +36,7 @@ import com.android.systemui.plugins.PluginDependencyProvider;
 import com.android.systemui.plugins.VolumeDialog;
 import com.android.systemui.plugins.VolumeDialogController;
 import com.android.systemui.qs.tiles.DndTile;
+import com.android.systemui.statusbar.policy.ConfigurationController;
 import com.android.systemui.statusbar.policy.ExtensionController;
 import com.android.systemui.tuner.TunerService;
 
@@ -45,12 +46,17 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.sun.audio.AlertSliderManager;
+import org.sun.systemui.volume.TriStateUiController;
+import org.sun.systemui.volume.TriStateUiControllerImpl;
+
 /**
  * Implementation of VolumeComponent backed by the new volume dialog.
  */
 @SysUISingleton
 public class VolumeDialogComponent implements VolumeComponent, TunerService.Tunable,
-        VolumeDialogControllerImpl.UserActivityListener{
+        VolumeDialogControllerImpl.UserActivityListener,
+        TriStateUiController.UserActivityListener {
 
     public static final String VOLUME_DOWN_SILENT = "sysui_volume_down_silent";
     public static final String VOLUME_UP_SILENT = "sysui_volume_up_silent";
@@ -72,6 +78,7 @@ public class VolumeDialogComponent implements VolumeComponent, TunerService.Tuna
             | ActivityInfo.CONFIG_ASSETS_PATHS | ActivityInfo.CONFIG_UI_MODE);
     private final KeyguardViewMediator mKeyguardViewMediator;
     private final ActivityStarter mActivityStarter;
+    private TriStateUiControllerImpl mTriStateController;
     private VolumeDialog mDialog;
     private VolumePolicy mVolumePolicy;
 
@@ -80,6 +87,7 @@ public class VolumeDialogComponent implements VolumeComponent, TunerService.Tuna
             Context context,
             KeyguardViewMediator keyguardViewMediator,
             ActivityStarter activityStarter,
+            ConfigurationController configurationController,
             VolumeDialogControllerImpl volumeDialogController,
             DemoModeController demoModeController,
             PluginDependencyProvider pluginDependencyProvider,
@@ -102,6 +110,14 @@ public class VolumeDialogComponent implements VolumeComponent, TunerService.Tuna
                     }
                     mDialog = dialog;
                     mDialog.init(LayoutParams.TYPE_VOLUME_OVERLAY, mVolumeDialogCallback);
+                    if (AlertSliderManager.hasAlertSlider(context)) {
+                        if (mTriStateController != null) {
+                            mTriStateController.destroy();
+                        }
+                        mTriStateController = new TriStateUiControllerImpl(mContext,
+                                configurationController, volumeDialogController);
+                        mTriStateController.init(this, LayoutParams.TYPE_VOLUME_OVERLAY);
+                    }
                 }).build();
 
 
@@ -194,6 +210,11 @@ public class VolumeDialogComponent implements VolumeComponent, TunerService.Tuna
     public void register() {
         mController.register();
         DndTile.setCombinedIcon(mContext, true);
+    }
+
+    @Override
+    public void onTriStateUserActivity() {
+        onUserActivity();
     }
 
     @Override

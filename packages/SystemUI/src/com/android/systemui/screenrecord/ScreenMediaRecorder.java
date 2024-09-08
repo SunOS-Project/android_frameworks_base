@@ -42,6 +42,7 @@ import android.media.projection.IMediaProjectionManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -73,10 +74,13 @@ public class ScreenMediaRecorder extends MediaProjection.Callback {
     private static final int TOTAL_NUM_TRACKS = 1;
     private static final int VIDEO_FRAME_RATE = 30;
     private static final int VIDEO_FRAME_RATE_TO_RESOLUTION_RATIO = 6;
+    private static final int LOW_VIDEO_FRAME_RATE_TO_RESOLUTION_RATIO = 2;
+    private static final int LOW_FRAME_RATE = 25;
     private static final int AUDIO_BIT_RATE = 196000;
     private static final int AUDIO_SAMPLE_RATE = 44100;
     private static final int MAX_DURATION_MS = 60 * 60 * 1000;
     private static final long MAX_FILESIZE_BYTES = 5000000000L;
+    private static final long MAX_FILESIZE_BYTES_LONGER = 16106100000L; // 15 GiB
     private static final String TAG = "ScreenMediaRecorder";
 
 
@@ -93,8 +97,13 @@ public class ScreenMediaRecorder extends MediaProjection.Callback {
     private final MediaProjectionCaptureTarget mCaptureRegion;
     private final Handler mHandler;
 
+    private boolean mLowQuality;
+    private boolean mHEVC;
+
     private Context mContext;
     ScreenMediaRecorderListener mListener;
+
+    private final int mMaxRefreshRate;
 
     public ScreenMediaRecorder(Context context, Handler handler,
             int uid, ScreenRecordingAudioSource audioSource,
@@ -106,6 +115,16 @@ public class ScreenMediaRecorder extends MediaProjection.Callback {
         mCaptureRegion = captureRegion;
         mListener = listener;
         mAudioSource = audioSource;
+        mMaxRefreshRate = mContext.getResources().getInteger(
+                com.android.systemui.res.R.integer.config_screenRecorderMaxFramerate);
+    }
+
+    public void setLowQuality(boolean low) {
+        mLowQuality = low;
+    }
+
+    public void setHEVC(boolean hevc) {
+        mHEVC = hevc;
     }
 
     private void prepare() throws IOException, RemoteException, RuntimeException {
@@ -144,22 +163,36 @@ public class ScreenMediaRecorder extends MediaProjection.Callback {
         DisplayMetrics metrics = new DisplayMetrics();
         WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         wm.getDefaultDisplay().getRealMetrics(metrics);
-        int refreshRate = (int) wm.getDefaultDisplay().getRefreshRate();
+        int refreshRate = mLowQuality ? LOW_FRAME_RATE
+                : (int) wm.getDefaultDisplay().getRefreshRate();
+        if (mMaxRefreshRate != 0 && refreshRate > mMaxRefreshRate) refreshRate = mMaxRefreshRate;
         int[] dimens = getSupportedSize(metrics.widthPixels, metrics.heightPixels, refreshRate);
         int width = dimens[0];
         int height = dimens[1];
         refreshRate = dimens[2];
-        int vidBitRate = width * height * refreshRate / VIDEO_FRAME_RATE
-                * VIDEO_FRAME_RATE_TO_RESOLUTION_RATIO;
-        mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-        mMediaRecorder.setVideoEncodingProfileLevel(
-                MediaCodecInfo.CodecProfileLevel.AVCProfileHigh,
-                MediaCodecInfo.CodecProfileLevel.AVCLevel3);
+        int resRatio = mLowQuality ? LOW_VIDEO_FRAME_RATE_TO_RESOLUTION_RATIO
+                : VIDEO_FRAME_RATE_TO_RESOLUTION_RATIO;
+        int vidBitRate = width * height * refreshRate / VIDEO_FRAME_RATE * resRatio;
+        /* PS: HEVC can be set too, to reduce file size without quality loss (h265 is more efficient than h264),
+        but at the same time the cpu load is 8-10 times higher and some devices don't support it yet */
+        if (!mHEVC) {
+            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mMediaRecorder.setVideoEncodingProfileLevel(
+                    MediaCodecInfo.CodecProfileLevel.AVCProfileHigh,/*actually the common used high level profile*/
+                    mLowQuality ? MediaCodecInfo.CodecProfileLevel.AVCLevel32/*level 3.2*/
+                    : MediaCodecInfo.CodecProfileLevel.AVCLevel42/*level 4.2*/);
+        } else {
+            mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.HEVC);
+            mMediaRecorder.setVideoEncodingProfileLevel(
+                    MediaCodecInfo.CodecProfileLevel.HEVCProfileMain,
+                    mLowQuality ? MediaCodecInfo.CodecProfileLevel.HEVCHighTierLevel31/*level 3.1*/
+                    : MediaCodecInfo.CodecProfileLevel.HEVCHighTierLevel41/*level 4.1*/);
+        }
         mMediaRecorder.setVideoSize(width, height);
         mMediaRecorder.setVideoFrameRate(refreshRate);
         mMediaRecorder.setVideoEncodingBitRate(vidBitRate);
-        mMediaRecorder.setMaxDuration(MAX_DURATION_MS);
-        mMediaRecorder.setMaxFileSize(MAX_FILESIZE_BYTES);
+        mMediaRecorder.setMaxDuration(0);
+        mMediaRecorder.setMaxFileSize(MAX_FILESIZE_BYTES_LONGER);
 
         // Set up audio
         if (mAudioSource == MIC) {
@@ -337,6 +370,7 @@ public class ScreenMediaRecorder extends MediaProjection.Callback {
         values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
         values.put(MediaStore.Video.Media.DATE_ADDED, System.currentTimeMillis());
         values.put(MediaStore.Video.Media.DATE_TAKEN, System.currentTimeMillis());
+        values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + File.separator + "ScreenRecords");
 
         ContentResolver resolver = mContext.getContentResolver();
         Uri collectionUri = MediaStore.Video.Media.getContentUri(

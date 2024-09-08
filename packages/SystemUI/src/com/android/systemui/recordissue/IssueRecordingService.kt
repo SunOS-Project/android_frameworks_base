@@ -28,6 +28,8 @@ import com.android.internal.logging.UiEventLogger
 import com.android.systemui.animation.DialogTransitionAnimator
 import com.android.systemui.dagger.qualifiers.LongRunning
 import com.android.systemui.dagger.qualifiers.Main
+import com.android.systemui.flags.FeatureFlags
+import com.android.systemui.plugins.ActivityStarter
 import com.android.systemui.qs.pipeline.domain.interactor.PanelInteractor
 import com.android.systemui.res.R
 import com.android.systemui.screenrecord.RecordingController
@@ -46,6 +48,8 @@ constructor(
     @Main handler: Handler,
     uiEventLogger: UiEventLogger,
     notificationManager: NotificationManager,
+    featureFlags: FeatureFlags,
+    activityStarter: ActivityStarter,
     userContextProvider: UserContextProvider,
     keyguardDismissUtil: KeyguardDismissUtil,
     private val dialogTransitionAnimator: DialogTransitionAnimator,
@@ -60,6 +64,9 @@ constructor(
         handler,
         uiEventLogger,
         notificationManager,
+        featureFlags,
+        dialogTransitionAnimator,
+        activityStarter,
         userContextProvider,
         keyguardDismissUtil
     ) {

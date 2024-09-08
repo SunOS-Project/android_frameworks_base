@@ -176,6 +176,8 @@ import java.util.concurrent.Executor;
 
 import javax.inject.Named;
 
+import org.sun.systemui.qs.dagger.CustomTilesModule;
+
 /**
  * A dagger module for injecting components of System UI that are required by System UI.
  *
@@ -206,6 +208,7 @@ import javax.inject.Named;
         ConfigurationControllerModule.class,
         ConnectivityModule.class,
         ControlsModule.class,
+        CustomTilesModule.class,
         DemoModeModule.class,
         DeviceEntryModule.class,
         DisableFlagsModule.class,

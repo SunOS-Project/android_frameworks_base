@@ -20,6 +20,8 @@ import static android.hardware.SensorPrivacyManager.Sensors.CAMERA;
 
 import static com.android.systemui.statusbar.policy.RotationLockControllerImpl.hasSufficientPermission;
 
+import static org.sun.os.RotateManager.ROTATE_FOLLOW_SYSTEM;
+
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -46,17 +48,21 @@ import com.android.systemui.qs.QSHost;
 import com.android.systemui.qs.QsEventLogger;
 import com.android.systemui.qs.UserSettingObserver;
 import com.android.systemui.qs.logging.QSLogger;
-import com.android.systemui.qs.tileimpl.QSTileImpl;
 import com.android.systemui.res.R;
 import com.android.systemui.statusbar.policy.BatteryController;
+import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.statusbar.policy.RotationLockController;
 import com.android.systemui.statusbar.policy.RotationLockController.RotationLockControllerCallback;
 import com.android.systemui.util.settings.SecureSettings;
 
 import javax.inject.Inject;
 
+import org.sun.os.IRotateConfigListener;
+import org.sun.os.RotateManager;
+import org.sun.systemui.qs.tiles.SecureQSTile;
+
 /** Quick settings tile: Rotation **/
-public class RotationLockTile extends QSTileImpl<BooleanState> implements
+public class RotationLockTile extends SecureQSTile<BooleanState> implements
         BatteryController.BatteryStateChangeCallback {
 
     public static final String TILE_SPEC = "rotation";
@@ -65,10 +71,23 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
 
     private final Icon mIcon = ResourceIcon.get(com.android.internal.R.drawable.ic_qs_auto_rotate);
     private final RotationLockController mController;
+    private final RotateManager mRotateManager;
     private final SensorPrivacyManager mPrivacyManager;
     private final BatteryController mBatteryController;
     private final UserSettingObserver mSetting;
     private final boolean mAllowRotationResolver;
+
+    private final IRotateConfigListener.Stub mRotateConfigListener =
+                new IRotateConfigListener.Stub() {
+        @Override
+        public void onRotateConfigChanged(int config) {
+            mRotateConfig = config;
+            refreshState();
+        }
+    };
+
+    private int mRotateConfig = ROTATE_FOLLOW_SYSTEM;
+    private boolean mRegistered = false;
 
     @Inject
     public RotationLockTile(
@@ -84,10 +103,11 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
             RotationLockController rotationLockController,
             SensorPrivacyManager privacyManager,
             BatteryController batteryController,
-            SecureSettings secureSettings
+            SecureSettings secureSettings,
+            KeyguardStateController keyguardStateController
     ) {
         super(host, uiEventLogger, backgroundLooper, mainHandler, falsingManager, metricsLogger,
-                statusBarStateController, activityStarter, qsLogger);
+                statusBarStateController, activityStarter, qsLogger, keyguardStateController);
         mController = rotationLockController;
         mController.observe(this, mCallback);
         mPrivacyManager = privacyManager;
@@ -108,6 +128,8 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
         mBatteryController.observe(getLifecycle(), this);
         mAllowRotationResolver = mContext.getResources().getBoolean(
                 com.android.internal.R.bool.config_allowRotationResolver);
+
+        mRotateManager = mContext.getSystemService(RotateManager.class);
     }
 
     @Override
@@ -131,7 +153,11 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
     }
 
     @Override
-    protected void handleClick(@Nullable Expandable expandable) {
+    protected void handleClick(@Nullable Expandable expandable, boolean keyguardShowing) {
+        if (checkKeyguard(expandable, keyguardShowing)) {
+            return;
+        }
+
         final boolean newState = !mState.value;
         mController.setRotationLocked(!newState, /* caller= */ "RotationLockTile#handleClick");
         refreshState(newState);
@@ -158,20 +184,27 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
         if (!rotationLocked) {
             state.secondaryLabel = cameraRotation ? mContext.getResources().getString(
                     R.string.rotation_lock_camera_rotation_on)
-                    : EMPTY_SECONDARY_STRING;
+                    : mContext.getResources().getString(
+                    R.string.switch_bar_on);
             state.icon = ResourceIcon.get(R.drawable.qs_auto_rotate_icon_on);
         } else {
-            state.secondaryLabel = EMPTY_SECONDARY_STRING;
+            state.secondaryLabel = mContext.getResources().getString(
+                    R.string.switch_bar_off);
         }
         state.stateDescription = state.secondaryLabel;
 
         state.expandedAccessibilityClassName = Switch.class.getName();
-        state.state = state.value ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
+        state.state = mRotateConfig != ROTATE_FOLLOW_SYSTEM ? Tile.STATE_UNAVAILABLE : 
+                state.value ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE;
     }
 
     @Override
     protected void handleDestroy() {
         super.handleDestroy();
+        if (mRegistered) {
+            mRotateManager.unregisterRotateConfigListener(mRotateConfigListener);
+            mRegistered = false;
+        }
         mSetting.setListening(false);
         mPrivacyManager.removeSensorPrivacyListener(CAMERA, mSensorPrivacyChangedListener);
     }
@@ -180,6 +213,14 @@ public class RotationLockTile extends QSTileImpl<BooleanState> implements
     public void handleSetListening(boolean listening) {
         super.handleSetListening(listening);
         mSetting.setListening(listening);
+
+        if (listening && !mRegistered) {
+            mRotateManager.registerRotateConfigListener(mRotateConfigListener);
+            mRegistered = true;
+        } else if (!listening && mRegistered) {
+            mRotateManager.unregisterRotateConfigListener(mRotateConfigListener);
+            mRegistered = false;
+        }
     }
 
     @Override

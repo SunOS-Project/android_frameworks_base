@@ -49,16 +49,15 @@ constructor(
         with(input) {
             when (action) {
                 is QSTileUserAction.Click -> {
-                    val wasEnabled: Boolean = input.data.isEnabled
                     if (keyguardController.isMethodSecure() && keyguardController.isShowing()) {
                         activityStarter.postQSRunnableDismissingKeyguard {
                             CoroutineScope(applicationScope.coroutineContext).launch {
-                                locationController.setLocationEnabled(!wasEnabled)
+                                switchMode()
                             }
                         }
                     } else {
                         withContext(coroutineContext) {
-                            locationController.setLocationEnabled(!wasEnabled)
+                            switchMode()
                         }
                     }
                 }
@@ -70,4 +69,20 @@ constructor(
                 }
             }
         }
+
+    private fun switchMode() {
+        locationController.setLocationEnabled(when (locationController.currentMode) {
+            BATTERY_SAVING -> OFF
+            SENSORS_ONLY -> HIGH_ACCURACY
+            HIGH_ACCURACY -> BATTERY_SAVING
+            else -> SENSORS_ONLY
+        })
+    }
+
+    companion object {
+        private const val BATTERY_SAVING = Settings.Secure.LOCATION_MODE_BATTERY_SAVING
+        private const val SENSORS_ONLY = Settings.Secure.LOCATION_MODE_SENSORS_ONLY
+        private const val HIGH_ACCURACY = Settings.Secure.LOCATION_MODE_HIGH_ACCURACY
+        private const val OFF = Settings.Secure.LOCATION_MODE_OFF
+    }
 }

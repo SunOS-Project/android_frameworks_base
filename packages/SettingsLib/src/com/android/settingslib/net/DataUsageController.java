@@ -68,6 +68,10 @@ public class DataUsageController {
         mNetworkController = networkController;
     }
 
+    public int getSubscriptionId() {
+        return mSubscriptionId;
+    }
+
     /**
      * By default this class will just get data usage information for the default data subscription,
      * but this method can be called to require it to use an explicit subscription id which may be

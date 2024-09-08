@@ -157,6 +157,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
+import org.sun.provider.SettingsExt;
+
 /**
  * The power manager service is responsible for coordinating power management
  * functions on the device.
@@ -1479,6 +1481,9 @@ public final class PowerManagerService extends SystemService
                 false, mSettingsObserver, UserHandle.USER_ALL);
         resolver.registerContentObserver(Settings.Secure.getUriFor(
                 Settings.Secure.DOZE_ALWAYS_ON),
+                false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.Secure.getUriFor(
+                SettingsExt.Secure.DOZE_ON_CHARGE),
                 false, mSettingsObserver, UserHandle.USER_ALL);
         resolver.registerContentObserver(Settings.Secure.getUriFor(
                 Settings.Secure.DOUBLE_TAP_TO_WAKE),

@@ -16,13 +16,19 @@
 
 package com.android.systemui.statusbar.phone;
 
+import static android.content.Intent.ACTION_BATTERY_CHANGED;
+
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemProperties;
@@ -60,11 +66,13 @@ import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.sun.provider.SettingsExt;
+
 /**
  * Retrieve doze information
  */
 @SysUISingleton
-public class DozeParameters implements
+public class DozeParameters extends BroadcastReceiver implements
         TunerService.Tunable,
         com.android.systemui.plugins.statusbar.DozeParameters,
         Dumpable, ConfigurationController.ConfigurationListener,
@@ -90,6 +98,7 @@ public class DozeParameters implements
     private boolean mDozeAlwaysOn;
     private boolean mControlScreenOffAnimation;
     private boolean mIsQuickPickupEnabled;
+    private boolean mPlugged;
 
     private boolean mKeyguardVisible;
     @VisibleForTesting
@@ -149,9 +158,12 @@ public class DozeParameters implements
         tunerService.addTunable(
                 this,
                 Settings.Secure.DOZE_ALWAYS_ON,
+                SettingsExt.Secure.DOZE_ON_CHARGE,
                 Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED);
         configurationController.addCallback(this);
         statusBarStateController.addCallback(this);
+
+        context.registerReceiver(this, new IntentFilter(ACTION_BATTERY_CHANGED));
 
         mFoldAodAnimationController = sysUiUnfoldComponent
                 .map(SysUIUnfoldComponent::getFoldAodAnimationController).orElse(null);
@@ -410,11 +422,24 @@ public class DozeParameters implements
     public void onTuningChanged(String key, String newValue) {
         mDozeAlwaysOn = mAmbientDisplayConfiguration.alwaysOnEnabled(mUserTracker.getUserId());
 
-        if (key.equals(Settings.Secure.DOZE_ALWAYS_ON)) {
+        if (key.equals(Settings.Secure.DOZE_ALWAYS_ON) ||
+                key.equals(SettingsExt.Secure.DOZE_ON_CHARGE)) {
             updateControlScreenOff();
         }
 
         dispatchAlwaysOnEvent();
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        final int status = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
+        final boolean newPlugged = status != 0;
+
+        if (newPlugged != mPlugged) {
+            mPlugged = newPlugged;
+            mDozeAlwaysOn = mAmbientDisplayConfiguration.alwaysOnEnabled(mUserTracker.getUserId());
+            updateControlScreenOff();
+        }
     }
 
     @Override

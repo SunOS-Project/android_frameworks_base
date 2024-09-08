@@ -65,6 +65,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.StatusBarManager;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
@@ -73,6 +74,7 @@ import android.graphics.Rect;
 import android.graphics.Region;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.os.Trace;
 import android.os.UserManager;
 import android.os.VibrationExtInfo;
@@ -80,6 +82,7 @@ import android.provider.Settings;
 import android.util.IndentingPrintWriter;
 import android.util.Log;
 import android.util.MathUtils;
+import android.view.GestureDetector;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -267,6 +270,8 @@ import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import org.sun.systemui.shade.CustomGestureListener;
+
 @SysUISingleton
 public final class NotificationPanelViewController implements ShadeSurface, Dumpable {
 
@@ -333,6 +338,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private final NotificationStackScrollLayoutController mNotificationStackScrollLayoutController;
     private final LayoutInflater mLayoutInflater;
     private final FeatureFlags mFeatureFlags;
+    private final PowerManager mPowerManager;
     private final AccessibilityManager mAccessibilityManager;
     private final NotificationWakeUpCoordinator mWakeUpCoordinator;
     private final PulseExpansionHandler mPulseExpansionHandler;
@@ -636,6 +642,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     private int mLockscreenToDreamingTransitionTranslationY;
     private int mGoneToDreamingTransitionTranslationY;
     private boolean mForceFlingAnimationForTest = false;
+
+    private final CustomGestureListener mCustomGestureListener;
+    private final GestureDetector mDoubleTapGesture;
     private final SplitShadeStateController mSplitShadeStateController;
     private final Runnable mFlingCollapseRunnable = () -> fling(0, false /* expand */,
             mNextCollapseSpeedUpFactor, false /* expandBecauseOfFalsing */);
@@ -704,6 +713,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
 
     @Inject
     public NotificationPanelViewController(NotificationPanelView view,
+            Context context,
             @Main Handler handler,
             LayoutInflater layoutInflater,
             FeatureFlags featureFlags,
@@ -722,6 +732,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             CommandQueue commandQueue,
             VibratorHelper vibratorHelper,
             LatencyTracker latencyTracker,
+            PowerManager powerManager,
             AccessibilityManager accessibilityManager,
             @DisplayId int displayId,
             KeyguardUpdateMonitor keyguardUpdateMonitor,
@@ -790,6 +801,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             ActivityStarter activityStarter,
             SharedNotificationContainerInteractor sharedNotificationContainerInteractor,
             ActiveNotificationsInteractor activeNotificationsInteractor,
+            CustomGestureListener customGestureListener,
             HeadsUpNotificationInteractor headsUpNotificationInteractor,
             EmergencyButtonController.Factory emergencyButtonControllerFactory,
             ShadeAnimationInteractor shadeAnimationInteractor,
@@ -910,6 +922,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         mFeatureFlags = featureFlags;
         mAnimateBack = predictiveBackAnimateShade();
         mFalsingCollector = falsingCollector;
+        mPowerManager = powerManager;
         mWakeUpCoordinator = coordinator;
         mMainDispatcher = mainDispatcher;
         mAccessibilityManager = accessibilityManager;
@@ -918,6 +931,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         mCommandQueue = commandQueue;
         mDisplayId = displayId;
         mPulseExpansionHandler = pulseExpansionHandler;
+        mCustomGestureListener = customGestureListener;
         mDozeParameters = dozeParameters;
         mScrimController = scrimController;
         mUserManager = userManager;
@@ -944,6 +958,14 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
         });
         mBottomAreaShadeAlphaAnimator.setDuration(160);
         mBottomAreaShadeAlphaAnimator.setInterpolator(Interpolators.ALPHA_OUT);
+        mDoubleTapGesture = new GestureDetector(context,
+                new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                mPowerManager.goToSleep(e.getEventTime());
+                return true;
+            }
+        });
         mConversationNotificationManager = conversationNotificationManager;
         mAuthController = authController;
         mLockIconViewController = lockIconViewController;
@@ -5129,6 +5151,14 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
                 mShadeLog.logMotionEvent(event,
                         "onTouch: ignore touch, bouncer scrimmed or showing over dream");
                 return false;
+            }
+
+            if ((!mPulsing && !mDozing && mBarState == StatusBarState.KEYGUARD &&
+                    mCustomGestureListener.shouldSleepFromLockscreen()) ||
+                    (!mQsController.getExpanded() &&
+                    event.getY() <= mStatusBarMinHeight &&
+                    mCustomGestureListener.shouldSleepFromStatusbar())) {
+                mDoubleTapGesture.onTouchEvent(event);
             }
 
             // Make sure the next touch won't the blocked after the current ends.

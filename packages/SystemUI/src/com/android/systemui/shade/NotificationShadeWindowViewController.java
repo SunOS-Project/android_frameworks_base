@@ -85,12 +85,15 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.shade.CustomGestureListener;
+
 /**
  * Controller for {@link NotificationShadeWindowView}.
  */
 @SysUISingleton
 public class NotificationShadeWindowViewController implements Dumpable {
     private static final String TAG = "NotifShadeWindowVC";
+    private final CustomGestureListener mCustomGestureListener;
     private final FalsingCollector mFalsingCollector;
     private final SysuiStatusBarStateController mStatusBarStateController;
     private final NotificationShadeWindowView mView;
@@ -132,10 +135,12 @@ public class NotificationShadeWindowViewController implements Dumpable {
     private final CentralSurfaces mService;
     private final DozeServiceHost mDozeServiceHost;
     private final DozeScrimController mDozeScrimController;
+    private final NotificationPanelViewController mNotificationPanelViewController;
     private final NotificationShadeWindowController mNotificationShadeWindowController;
     private DragDownHelper mDragDownHelper;
     private boolean mExpandingBelowNotch;
     private final DockManager mDockManager;
+    private final GestureDetector mCustomGestureHandler;
     private final ShadeViewController mShadeViewController;
     private final PanelExpansionInteractor mPanelExpansionInteractor;
     private final ShadeExpansionStateManager mShadeExpansionStateManager;
@@ -145,6 +150,7 @@ public class NotificationShadeWindowViewController implements Dumpable {
      * intercepted and all future touch events for the gesture should be processed by this view.
      */
     private boolean mExternalTouchIntercepted = false;
+
     private boolean mIsTrackingBarGesture = false;
     private boolean mIsOcclusionTransitionRunning = false;
     private DisableSubpixelTextTransitionListener mDisableSubpixelTextTransitionListener;
@@ -158,10 +164,12 @@ public class NotificationShadeWindowViewController implements Dumpable {
     @ExperimentalCoroutinesApi
     @Inject
     public NotificationShadeWindowViewController(
+            CustomGestureListener customGestureListener,
             LockscreenShadeTransitionController transitionController,
             FalsingCollector falsingCollector,
             SysuiStatusBarStateController statusBarStateController,
             DockManager dockManager,
+            NotificationPanelViewController notificationPanelViewController,
             NotificationShadeDepthController depthController,
             NotificationShadeWindowView notificationShadeWindowView,
             ShadeViewController shadeViewController,
@@ -197,8 +205,10 @@ public class NotificationShadeWindowViewController implements Dumpable {
         mLockscreenShadeTransitionController = transitionController;
         mFalsingCollector = falsingCollector;
         mStatusBarStateController = statusBarStateController;
+        mCustomGestureListener = customGestureListener;
         mView = notificationShadeWindowView;
         mDockManager = dockManager;
+        mNotificationPanelViewController = notificationPanelViewController;
         mShadeViewController = shadeViewController;
         mPanelExpansionInteractor = panelExpansionInteractor;
         mShadeExpansionStateManager = shadeExpansionStateManager;
@@ -223,6 +233,9 @@ public class NotificationShadeWindowViewController implements Dumpable {
         mPrimaryBouncerInteractor = primaryBouncerInteractor;
         mAlternateBouncerInteractor = alternateBouncerInteractor;
         mQuickSettingsController = quickSettingsController;
+
+        mCustomGestureHandler = new GestureDetector(mView.getContext(),
+                mCustomGestureListener);
 
         // This view is not part of the newly inflated expanded status bar.
         mBrightnessMirror = mView.findViewById(R.id.brightness_mirror_container);
@@ -369,7 +382,15 @@ public class NotificationShadeWindowViewController implements Dumpable {
                 }
 
                 mFalsingCollector.onTouchEvent(ev);
-                mPulsingWakeupGestureHandler.onTouchEvent(ev);
+                if (!mNotificationPanelViewController.isShadeFullyExpanded()
+                        && !mService.isBouncerShowing()) {
+                    mCustomGestureHandler.onTouchEvent(ev);
+                }
+                // Pass touch events to the pulsing gesture listener only if it's dozing,
+                // otherwise lockscreen DT2S and AOD DT2W will conflict.
+                if (mStatusBarStateController.isDozing()) {
+                    mPulsingWakeupGestureHandler.onTouchEvent(ev);
+                }
 
                 if (!SceneContainerFlag.isEnabled()
                         && mGlanceableHubContainerController.onTouchEvent(ev)) {

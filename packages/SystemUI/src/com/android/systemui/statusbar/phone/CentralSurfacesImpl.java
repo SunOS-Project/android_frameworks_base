@@ -255,6 +255,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
+import org.sun.systemui.shade.CustomGestureListener;
+
 /**
  * A class handling initialization and coordination between some of the key central surfaces in
  * System UI: The notification shade, the keyguard (lockscreen), and the status bar.
@@ -446,6 +448,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
     private View mReportRejectedTouch;
 
+    private final CustomGestureListener mCustomGestureListener;
     private final NotificationGutsManager mGutsManager;
     private final ShadeExpansionStateManager mShadeExpansionStateManager;
     private final KeyguardViewMediator mKeyguardViewMediator;
@@ -629,6 +632,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             FalsingManager falsingManager,
             FalsingCollector falsingCollector,
             BroadcastDispatcher broadcastDispatcher,
+            CustomGestureListener customGestureListener,
             NotificationGutsManager notificationGutsManager,
             ShadeExpansionStateManager shadeExpansionStateManager,
             KeyguardViewMediator keyguardViewMediator,
@@ -738,6 +742,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mFalsingCollector = falsingCollector;
         mFalsingManager = falsingManager;
         mBroadcastDispatcher = broadcastDispatcher;
+        mCustomGestureListener = customGestureListener;
         mGutsManager = notificationGutsManager;
         mShadeExpansionStateManager = shadeExpansionStateManager;
         mKeyguardViewMediator = keyguardViewMediator;
@@ -1162,7 +1167,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
     // Constructing the view
     // ================================================================================
     protected void makeStatusBarView(@Nullable RegisterStatusBarResult result) {
-        CentralSurfacesImplExt.getInstance().init(this, mContext,
+        CentralSurfacesImplExt.getInstance().init(this, mContext, mCustomGestureListener,
                 mDisplayId, mMessageRouter, mStatusBarWindowController, mVibratorHelper);
 
         updateDisplaySize(); // populates mDisplayMetrics

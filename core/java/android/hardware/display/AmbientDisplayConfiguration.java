@@ -20,6 +20,9 @@ import static org.sun.provider.SettingsExt.Secure.SCREEN_OFF_UDFPS_ENABLED;
 
 import android.annotation.TestApi;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.provider.Settings;
@@ -31,6 +34,8 @@ import com.android.internal.R;
 import com.android.internal.util.ArrayUtils;
 
 import java.util.Map;
+
+import org.sun.provider.SettingsExt;
 
 /**
  * AmbientDisplayConfiguration encapsulates reading access to the configuration of ambient display.
@@ -48,6 +53,8 @@ public class AmbientDisplayConfiguration {
     private static final String[] DOZE_SETTINGS = {
             Settings.Secure.DOZE_ENABLED,
             Settings.Secure.DOZE_ALWAYS_ON,
+            SettingsExt.Secure.DOZE_FOR_NOTIFICATIONS,
+            SettingsExt.Secure.DOZE_ON_CHARGE,
             Settings.Secure.DOZE_PICK_UP_GESTURE,
             Settings.Secure.DOZE_PULSE_ON_LONG_PRESS,
             Settings.Secure.DOZE_DOUBLE_TAP_GESTURE,
@@ -96,6 +103,12 @@ public class AmbientDisplayConfiguration {
     public boolean pulseOnNotificationAvailable() {
         return mContext.getResources().getBoolean(R.bool.config_pulseOnNotificationsAvailable)
                 && ambientDisplayAvailable();
+    }
+
+    /** @hide */
+    public boolean userPulseOnNotificationEnabled(int user) {
+        return boolSettingDefaultOn(SettingsExt.Secure.DOZE_FOR_NOTIFICATIONS, user)
+                && pulseOnNotificationEnabled(user);
     }
 
     /** @hide */
@@ -225,8 +238,32 @@ public class AmbientDisplayConfiguration {
      */
     @TestApi
     public boolean alwaysOnEnabled(int user) {
-        return boolSetting(Settings.Secure.DOZE_ALWAYS_ON, user, mAlwaysOnByDefault ? 1 : 0)
-                && alwaysOnAvailable() && !accessibilityInversionEnabled(user);
+        final boolean alwaysOnEnabled = boolSetting(Settings.Secure.DOZE_ALWAYS_ON, user,
+                mAlwaysOnByDefault ? 1 : 0) && alwaysOnAvailable()
+                && !accessibilityInversionEnabled(user);
+        final boolean alwaysOnChargeEnabled = boolSetting(SettingsExt.Secure.DOZE_ON_CHARGE, user, 0);
+        return alwaysOnEnabled && (!alwaysOnChargeEnabled || isPluuged());
+    }
+
+    /**
+     * Returns if Always-on-Display functionality is enabled on the display for a specified user,
+     * without checking charging only condition.
+     *
+     * @hide
+     */
+    public boolean alwaysOnEnabledWithoutPlug(int user) {
+        return boolSetting(Settings.Secure.DOZE_ALWAYS_ON, user,
+                mAlwaysOnByDefault ? 1 : 0) && alwaysOnAvailable()
+                && !accessibilityInversionEnabled(user);
+    }
+
+    private boolean isPluuged() {
+        final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        final Intent intent = mContext.registerReceiver(null, filter);
+        if (intent != null) {
+            return intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
+        }
+        return false;
     }
 
     /**

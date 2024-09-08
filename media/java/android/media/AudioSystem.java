@@ -1899,6 +1899,13 @@ public class AudioSystem
         return sb.toString();
     }
 
+    /** @hide */
+    public static native int setAppVolume(@NonNull String packageName, int uid, float volume);
+    /** @hide */
+    public static native int setAppMute(@NonNull String packageName, int uid, boolean mute);
+    /** @hide */
+    public static native int listAppVolumes(ArrayList<AppVolume> volumes);
+
     /**
      * @hide
      * Do not use directly, see {@link AudioManager#getDevicesForAttributes(AudioAttributes)}

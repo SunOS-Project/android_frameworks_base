@@ -158,6 +158,16 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
 
     private var overlayTouchListener: TouchExplorationStateChangeListener? = null
 
+    private val useFrameworkDimming = context.resources.getBoolean(
+        R.bool.config_udfpsFrameworkDimming
+    )
+
+    private val udfpsHelper: UdfpsHelper? = if (useFrameworkDimming) {
+        UdfpsHelper(context, windowManager, shadeInteractor, requestReason)
+    } else {
+        null
+    }
+
     private val coreLayoutParams = WindowManager.LayoutParams(
         WindowManager.LayoutParams.TYPE_NAVIGATION_BAR_PANEL,
         0 /* flags set in computeLayoutParams() */,
@@ -212,6 +222,7 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
                     overlayTouchView = (inflater.inflate(
                             R.layout.udfps_touch_overlay, null, false
                     ) as UdfpsTouchOverlay).apply {
+                        setUdfpsDisplayModeProvider(udfpsDisplayModeProvider)
                         // This view overlaps the sensor area
                         // prevent it from being selectable during a11y
                         if (requestReason.isImportantForAccessibility()) {
@@ -233,6 +244,7 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
                                     udfpsOverlayInteractor = udfpsOverlayInteractor,
                                 )
                         }
+                        sensorRect = sensorBounds
                     }
                 } else {
                     overlayViewLegacy = (inflater.inflate(
@@ -284,6 +296,7 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
     }
 
     private fun addViewNowOrLater(view: View, animation: UdfpsAnimationViewController<*>?) {
+        udfpsHelper?.addDimLayer()
         if (udfpsViewPerformance()) {
             addViewRunnable = kotlinx.coroutines.Runnable {
                 Trace.setCounter("UdfpsAddView", 1)
@@ -430,9 +443,15 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
             }
             animationViewController = null
         }
+        overlayTouchView?.apply {
+            if (isDisplayConfigured) {
+                unconfigureDisplay()
+            }
+        }
         if (DeviceEntryUdfpsRefactor.isEnabled) {
             udfpsDisplayModeProvider.disable(null)
         }
+        udfpsHelper?.removeDimLayer()
         getTouchOverlay()?.apply {
             if (udfpsViewPerformance()) {
                 if (this.parent != null) {

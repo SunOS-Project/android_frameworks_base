@@ -16,6 +16,8 @@
 
 package android.hardware.display;
 
+import static org.sun.provider.SettingsExt.Secure.SCREEN_OFF_UDFPS_ENABLED;
+
 import android.annotation.TestApi;
 import android.content.Context;
 import android.os.Build;
@@ -146,7 +148,7 @@ public class AmbientDisplayConfiguration {
     /** @hide */
     public boolean screenOffUdfpsEnabled(int user) {
         return !TextUtils.isEmpty(udfpsLongPressSensorType())
-            && boolSettingDefaultOff("screen_off_udfps_enabled", user);
+            && boolSettingDefaultOff(SCREEN_OFF_UDFPS_ENABLED, user);
     }
 
     /** @hide */

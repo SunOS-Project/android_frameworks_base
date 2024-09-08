@@ -96,6 +96,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayDeque;
 import java.util.Set;
 
+import org.sun.server.wm.DisplayRotationController;
+
 /**
  * Defines the mapping between orientation and rotation of a display.
  * Non-public methods are assumed to run inside WM lock.
@@ -710,6 +712,7 @@ public class DisplayRotation {
                 "Display id=%d rotation changed to %d from %d, lastOrientation=%d",
                         displayId, rotation, oldRotation, lastOrientation);
 
+        DisplayRotationController.getInstance().updateRotation(rotation);
         mRotation = rotation;
 
         mDisplayContent.setLayoutNeeded();

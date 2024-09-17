@@ -14956,11 +14956,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                 // sticky broadcast, no flag specified (flag isn't required)
                 flags |= Context.RECEIVER_EXPORTED;
             } else if (requireExplicitFlagForDynamicReceivers && !explicitExportStateDefined) {
-                throw new SecurityException(
-                        callerPackage + ": One of RECEIVER_EXPORTED or "
-                                + "RECEIVER_NOT_EXPORTED should be specified when a receiver "
-                                + "isn't being registered exclusively for system broadcasts");
-                // Assume default behavior-- flag check is not enforced
+                flags |= Context.RECEIVER_NOT_EXPORTED;
             } else if (!requireExplicitFlagForDynamicReceivers && (
                     (flags & Context.RECEIVER_NOT_EXPORTED) == 0)) {
                 // Change is not enabled, assume exported unless otherwise specified.

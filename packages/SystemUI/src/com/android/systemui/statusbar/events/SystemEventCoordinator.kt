@@ -18,23 +18,35 @@ package com.android.systemui.statusbar.events
 
 import android.annotation.IntRange
 import android.content.Context
+import android.database.ContentObserver
+import android.net.Uri
+import android.os.Handler
+import android.os.UserHandle
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_PRIVACY
-import com.android.systemui.res.R
+import android.provider.Settings
+import com.android.systemui.battery.BatteryMeterView.BATTERY_STYLE_HIDDEN
+import com.android.systemui.battery.BatteryMeterView.BATTERY_STYLE_PORTRAIT
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.dagger.qualifiers.Application
+import com.android.systemui.dagger.qualifiers.Background
 import com.android.systemui.display.domain.interactor.ConnectedDisplayInteractor
 import com.android.systemui.display.domain.interactor.ConnectedDisplayInteractor.State
 import com.android.systemui.privacy.PrivacyChipBuilder
 import com.android.systemui.privacy.PrivacyItem
 import com.android.systemui.privacy.PrivacyItemController
+import com.android.systemui.res.R
+import com.android.systemui.settings.UserTracker
 import com.android.systemui.statusbar.policy.BatteryController
+import com.android.systemui.util.settings.SystemSettings
 import com.android.systemui.util.time.SystemClock
+import java.util.concurrent.Executor
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.sun.provider.SettingsExt.System.STATUS_BAR_BATTERY_STYLE
 
 /**
  * Listens for system events (battery, privacy, connectivity) and allows listeners to show status
@@ -47,8 +59,11 @@ constructor(
     private val systemClock: SystemClock,
     private val batteryController: BatteryController,
     private val privacyController: PrivacyItemController,
+    private val systemSettings: SystemSettings,
+    private val userTracker: UserTracker,
     private val context: Context,
     @Application private val appScope: CoroutineScope,
+    @Background private val bgExecutor: Executor,
     connectedDisplayInteractor: ConnectedDisplayInteractor
 ) {
     private val onDisplayConnectedFlow =
@@ -57,13 +72,36 @@ constructor(
     private var connectedDisplayCollectionJob: Job? = null
     private lateinit var scheduler: SystemStatusAnimationScheduler
 
+    private var batteryHidden = false
+    private val settingsObserver = object: ContentObserver(Handler()) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            when (uri?.lastPathSegment) {
+                STATUS_BAR_BATTERY_STYLE -> batteryHidden = isBatteryHidden()
+            }
+        }
+    }
+    private val userTrackerCallback = object: UserTracker.Callback {
+        override fun onUserChanged(newUser: Int, userContext: Context) {
+            batteryHidden = isBatteryHidden()
+        }
+    }
+
     fun startObserving() {
         batteryController.addCallback(batteryStateListener)
         privacyController.addCallback(privacyStateListener)
         startConnectedDisplayCollection()
+
+        systemSettings.registerContentObserverForUserSync(
+                STATUS_BAR_BATTERY_STYLE,
+                settingsObserver, UserHandle.USER_ALL);
+        batteryHidden = isBatteryHidden()
+        userTracker.addCallback(userTrackerCallback, bgExecutor)
     }
 
     fun stopObserving() {
+        userTracker.removeCallback(userTrackerCallback)
+        systemSettings.unregisterContentObserverSync(settingsObserver)
+
         batteryController.removeCallback(batteryStateListener)
         privacyController.removeCallback(privacyStateListener)
         connectedDisplayCollectionJob?.cancel()
@@ -74,6 +112,9 @@ constructor(
     }
 
     fun notifyPluggedIn(@IntRange(from = 0, to = 100) batteryLevel: Int) {
+        if (batteryHidden) {
+            return
+        }
         scheduler.onStatusEvent(BatteryEvent(batteryLevel))
     }
 
@@ -100,6 +141,11 @@ constructor(
                 onDisplayConnectedFlow
                         .onEach { scheduler.onStatusEvent(connectedDisplayEvent) }
                         .launchIn(appScope)
+    }
+
+    private fun isBatteryHidden(): Boolean {
+        return systemSettings.getIntForUser(STATUS_BAR_BATTERY_STYLE,
+                BATTERY_STYLE_PORTRAIT, userTracker.userId) == BATTERY_STYLE_HIDDEN
     }
 
     private val batteryStateListener = object : BatteryController.BatteryStateChangeCallback {

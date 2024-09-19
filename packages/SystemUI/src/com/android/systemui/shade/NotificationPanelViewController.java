@@ -2304,6 +2304,7 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
     @VisibleForTesting
     void onFlingEnd(boolean cancelled) {
         mIsFlinging = false;
+        mExpectingSynthesizedDown = false;
         // No overshoot when the animation ends
         setOverExpansionInternal(0, false /* isFromGesture */);
         setAnimator(null);
@@ -2436,7 +2437,6 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             return;
         }
         if (mExpectingSynthesizedDown) {
-            mExpectingSynthesizedDown = false;
             // Window never will receive touch events that typically trigger haptic on open.
             maybeVibrateOnOpening(false /* openingWithTouch */);
             fling(velocity > 1f ? 1000f * velocity : 0  /* expand */);
@@ -4103,6 +4103,9 @@ public final class NotificationPanelViewController implements ShadeSurface, Dump
             }
             mExpandedFraction = Math.min(1f,
                     maxPanelHeight == 0 ? 0 : mExpandedHeight / maxPanelHeight);
+            if (mExpandedFraction > 0f && mExpectingSynthesizedDown) {
+                mExpectingSynthesizedDown = false;
+            }
             mShadeRepository.setLegacyShadeExpansion(mExpandedFraction);
             mQsController.setShadeExpansion(mExpandedHeight, mExpandedFraction);
             mExpansionDragDownAmountPx = h;

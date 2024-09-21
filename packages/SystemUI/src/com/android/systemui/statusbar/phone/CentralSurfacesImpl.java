@@ -256,6 +256,7 @@ import javax.inject.Named;
 import javax.inject.Provider;
 
 import org.sun.systemui.shade.CustomGestureListener;
+import org.sun.systemui.statusbar.policy.BurnInProtectionController;
 
 /**
  * A class handling initialization and coordination between some of the key central surfaces in
@@ -448,6 +449,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
     private View mReportRejectedTouch;
 
+    private final BurnInProtectionController mBurnInProtectionController;
     private final CustomGestureListener mCustomGestureListener;
     private final NotificationGutsManager mGutsManager;
     private final ShadeExpansionStateManager mShadeExpansionStateManager;
@@ -632,6 +634,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
             FalsingManager falsingManager,
             FalsingCollector falsingCollector,
             BroadcastDispatcher broadcastDispatcher,
+            BurnInProtectionController burnInProtectionController,
             CustomGestureListener customGestureListener,
             NotificationGutsManager notificationGutsManager,
             ShadeExpansionStateManager shadeExpansionStateManager,
@@ -742,6 +745,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mFalsingCollector = falsingCollector;
         mFalsingManager = falsingManager;
         mBroadcastDispatcher = broadcastDispatcher;
+        mBurnInProtectionController = burnInProtectionController;
         mCustomGestureListener = customGestureListener;
         mGutsManager = notificationGutsManager;
         mShadeExpansionStateManager = shadeExpansionStateManager;
@@ -819,6 +823,8 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
         mBrightnessMirrorShowingInteractor = brightnessMirrorShowingInteractor;
         mGlanceableHubContainerController = glanceableHubContainerController;
         mEmergencyGestureIntentFactory = emergencyGestureIntentFactory;
+
+        mBurnInProtectionController.setCentralSurfaces(this);
 
         mLockscreenShadeTransitionController = lockscreenShadeTransitionController;
         mStartingSurfaceOptional = startingSurfaceOptional;
@@ -1215,6 +1221,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                     mShadeSurface.updateExpansionAndVisibility();
                     setBouncerShowingForStatusBarComponents(mBouncerShowing);
                     checkBarModes();
+                    mBurnInProtectionController.setPhoneStatusBarView(mStatusBarView);
                 });
         mStatusBarInitializer.initializeStatusBar();
 
@@ -2492,6 +2499,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
 
             updateNotificationPanelTouchState();
             getNotificationShadeWindowViewController().cancelCurrentTouch();
+            mBurnInProtectionController.stopShiftTimer();
             if (mLaunchCameraOnFinishedGoingToSleep) {
                 mLaunchCameraOnFinishedGoingToSleep = false;
 
@@ -2673,6 +2681,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces {
                 }
             }
             updateScrimController();
+            mBurnInProtectionController.startShiftTimer();
         }
     };
 

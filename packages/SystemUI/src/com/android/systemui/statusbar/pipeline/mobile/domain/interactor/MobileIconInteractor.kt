@@ -52,8 +52,12 @@ import com.android.systemui.statusbar.pipeline.satellite.ui.model.SatelliteIconM
 import com.android.systemui.statusbar.pipeline.shared.data.model.DataActivityModel
 import com.android.systemui.statusbar.policy.FiveGServiceClient.FiveGServiceState
 import com.android.systemui.util.CarrierNameCustomization
+import com.android.systemui.utils.coroutines.flow.conflatedCallbackFlow
+import com.hoc081098.flowext.combine
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,9 +66,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
+import org.sun.systemui.statusbar.connectivity.CustomSignalController
 
 interface MobileIconInteractor {
     /** The table log created for this connection */
@@ -163,6 +169,10 @@ interface MobileIconInteractor {
 
     val imsInfo: StateFlow<MobileIconCustomizationMode>
 
+    val showDataDisabledIcon: StateFlow<Boolean>
+
+    val showFourgIcon: StateFlow<Boolean>
+
     val showVolteIcon: StateFlow<Boolean>
 
     val showVowifiIcon: StateFlow<Boolean>
@@ -197,6 +207,8 @@ class MobileIconInteractorImpl(
     override val showVolteIcon: StateFlow<Boolean>,
     override val showVowifiIcon: StateFlow<Boolean>,
     private val context: Context,
+    private val bgDispatcher: CoroutineDispatcher,
+    private val customSignalController: CustomSignalController,
     private val defaultDataSubId: StateFlow<Int>,
     ddsIcon: StateFlow<SignalIconModel?>,
     crossSimdisplaySingnalLevel: StateFlow<Boolean>,
@@ -220,6 +232,42 @@ class MobileIconInteractorImpl(
             .map { carrierIdOverrides.carrierIdEntryExists(it) }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(), false)
+
+    override val showDataDisabledIcon: StateFlow<Boolean> =
+        conflatedCallbackFlow {
+            val callback =
+                object : CustomSignalController.Callback {
+                    override fun onSettingsChanged(dataDisabledIcon: Boolean, show4gIcon: Boolean) {
+                        trySend(dataDisabledIcon)
+                    }
+                }
+            customSignalController.addCallback(callback)
+            awaitClose { customSignalController.removeCallback(callback) }
+        }
+        .flowOn(bgDispatcher)
+        .stateIn(
+            scope,
+            SharingStarted.WhileSubscribed(),
+            customSignalController.showDataDisabledIcon()
+        )
+
+    override val showFourgIcon: StateFlow<Boolean> =
+        conflatedCallbackFlow {
+            val callback =
+                object : CustomSignalController.Callback {
+                    override fun onSettingsChanged(dataDisabledIcon: Boolean, show4gIcon: Boolean) {
+                        trySend(show4gIcon)
+                    }
+                }
+            customSignalController.addCallback(callback)
+            awaitClose { customSignalController.removeCallback(callback) }
+        }
+        .flowOn(bgDispatcher)
+        .stateIn(
+            scope,
+            SharingStarted.WhileSubscribed(),
+            customSignalController.show4gIcon()
+        )
 
     override val networkName =
         combine(connectionRepository.operatorAlphaShort, connectionRepository.networkName) {
@@ -588,11 +636,12 @@ class MobileIconInteractorImpl(
                 isDataConnected,
                 isConnectionFailed,
                 isInService,
+                showDataDisabledIcon,
                 hideNoInternetState
             ) { isDataEnabled, isDataConnected, isConnectionFailed, isInService,
-                        hideNoInternetState ->
+                        showDataDisabledIcon, hideNoInternetState ->
                 !hideNoInternetState && (!isDataEnabled || (isDataConnected && isConnectionFailed)
-                        || !isInService)
+                        || !isInService) && showDataDisabledIcon
             }
             .stateIn(scope, SharingStarted.WhileSubscribed(), true)
 

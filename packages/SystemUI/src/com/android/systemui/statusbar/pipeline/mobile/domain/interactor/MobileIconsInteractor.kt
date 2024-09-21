@@ -30,6 +30,7 @@ import com.android.settingslib.SignalIcon.MobileIconGroup
 import com.android.settingslib.mobile.TelephonyIcons
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.dagger.qualifiers.Application
+import com.android.systemui.dagger.qualifiers.Background
 import com.android.systemui.flags.FeatureFlagsClassic
 import com.android.systemui.flags.Flags.FILTER_PROVISIONING_NETWORK_SUBSCRIPTIONS
 import com.android.systemui.log.table.TableLogBuffer
@@ -47,6 +48,7 @@ import com.android.systemui.util.CarrierConfigTracker
 import com.android.systemui.util.CarrierNameCustomization
 import java.lang.ref.WeakReference
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -63,6 +65,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.sun.systemui.statusbar.connectivity.CustomSignalController
 
 /**
  * Business layer logic for the set of mobile subscription icons.
@@ -163,6 +166,8 @@ constructor(
     userSetupRepo: UserSetupRepository,
     @Application private val scope: CoroutineScope,
     private val context: Context,
+    @Background val bgDispatcher: CoroutineDispatcher,
+    private val customSignalController: CustomSignalController,
     private val featureFlagsClassic: FeatureFlagsClassic,
     val carrierNameCustomization: CarrierNameCustomization,
 ) : MobileIconsInteractor {
@@ -493,6 +498,8 @@ constructor(
                 showVolteIcon,
                 showVowifiIcon,
                 context,
+                bgDispatcher,
+                customSignalController,
                 mobileConnectionsRepo.defaultDataSubId,
                 ddsIcon,
                 crossSimdisplaySingnalLevel,

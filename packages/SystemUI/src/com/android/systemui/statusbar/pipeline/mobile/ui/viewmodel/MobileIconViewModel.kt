@@ -39,6 +39,7 @@ import com.android.systemui.statusbar.pipeline.mobile.domain.interactor.MobileIc
 import com.android.systemui.statusbar.pipeline.mobile.domain.model.SignalIconModel
 import com.android.systemui.statusbar.pipeline.shared.ConnectivityConstants
 import com.android.systemui.statusbar.pipeline.shared.data.model.DataActivityModel
+import com.hoc081098.flowext.combine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -276,18 +277,27 @@ private class CellularIconViewModel(
                 iconInteractor.networkTypeIconCustomization,
                 iconInteractor.voWifiAvailable,
                 iconInteractor.isInService,
+                iconInteractor.showFourgIcon,
             ) { networkTypeIconGroup, shouldShow, networkTypeIconCustomization, voWifiAvailable,
-                isInService ->
+                isInService, showFourgIcon ->
                 val desc =
                     if (networkTypeIconGroup.contentDescription != 0)
-                        ContentDescription.Resource(networkTypeIconGroup.contentDescription)
+                        ContentDescription.Resource(if (showFourgIcon) {
+                            convertLteToFourg(networkTypeIconGroup.contentDescription)
+                        } else {
+                            networkTypeIconGroup.contentDescription
+                        })
                     else null
                 val icon =
                     if (voWifiAvailable) {
                         Icon.Resource(TelephonyIcons.VOWIFI.dataType, desc)
                     } else {
                         if (networkTypeIconGroup.iconId != 0)
-                            Icon.Resource(networkTypeIconGroup.iconId, desc)
+                            Icon.Resource(if (showFourgIcon) {
+                                convertLteToFourg(networkTypeIconGroup.iconId)
+                            } else {
+                                networkTypeIconGroup.iconId
+                            }, desc)
                         else null
                     }
                 return@combine when {
@@ -306,6 +316,28 @@ private class CellularIconViewModel(
             }
             .distinctUntilChanged()
             .stateIn(scope, SharingStarted.WhileSubscribed(), null)
+
+    private fun convertLteToFourg(res: Int): Int {
+        when (res) {
+            com.android.settingslib.R.string.data_connection_lte,
+            com.android.settingslib.R.string.data_connection_4g_lte -> {
+                return com.android.settingslib.R.string.data_connection_4g
+            }
+            com.android.settingslib.R.string.data_connection_lte_plus,
+            com.android.settingslib.R.string.data_connection_4g_lte_plus -> {
+                return com.android.settingslib.R.string.data_connection_4g_plus
+            }
+            TelephonyIcons.ICON_LTE,
+            TelephonyIcons.ICON_4G_LTE -> {
+                return TelephonyIcons.ICON_4G
+            }
+            TelephonyIcons.ICON_LTE_PLUS,
+            TelephonyIcons.ICON_4G_LTE_PLUS -> {
+                return TelephonyIcons.ICON_4G_PLUS
+            }
+        }
+        return res
+    }
 
     override val networkTypeBackground =
         if (!flags.isEnabled(NEW_NETWORK_SLICE_UI)) {

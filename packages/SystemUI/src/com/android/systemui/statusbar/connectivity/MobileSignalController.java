@@ -76,6 +76,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 
+import org.sun.systemui.statusbar.connectivity.CustomSignalController;
+
 /**
  * Monitors the mobile signal changes and update the SysUI icons.
  */
@@ -84,6 +86,8 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
     private static final int STATUS_HISTORY_SIZE = 64;
     private final TelephonyManager mPhone;
     private final CarrierConfigTracker mCarrierConfigTracker;
+    private final CustomSignalController mCustomSignalController;
+    private final CustomSignalController.Callback mCustomCallback;
     private final ImsMmTelManager mImsMmTelManager;
     private final SubscriptionDefaults mDefaults;
     private final MobileMappingsProxy mMobileMappingsProxy;
@@ -164,6 +168,7 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
             SubscriptionDefaults defaults,
             Looper receiverLooper,
             CarrierConfigTracker carrierConfigTracker,
+            CustomSignalController customSignalController,
             MobileStatusTrackerFactory mobileStatusTrackerFactory
     ) {
         super("MobileSignalController(" + info.getSubscriptionId() + ")", context,
@@ -171,6 +176,7 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
                 networkController);
         mCarrierConfigTracker = carrierConfigTracker;
         mConfig = config;
+        mCustomSignalController = customSignalController;
         mPhone = phone;
         mDefaults = defaults;
         mSubscriptionInfo = info;
@@ -192,6 +198,14 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
         mLastState.enabled = mCurrentState.enabled = hasMobileData;
         mLastState.iconGroup = mCurrentState.iconGroup = mDefaultIcons;
 
+        mCustomCallback = new CustomSignalController.Callback() {
+            @Override
+            public void onSettingsChanged(boolean dataDisabledIcon, boolean show4gIcon) {
+                mConfig = Config.readConfig(mContext);
+                setConfiguration(mConfig);
+                notifyListeners();
+            }
+        };
         mObserver = new ContentObserver(new Handler(receiverLooper)) {
             @Override
             public void onChange(boolean selfChange) {
@@ -276,12 +290,14 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
         builder.setNetworkSpecifier(specifier);
         final NetworkRequest request = builder.build();
         mConnectivityManager.registerNetworkCallback(request, mNetworkCallback);
+        mCustomSignalController.addCallback(mCustomCallback);
     }
 
     /**
      * Stop listening for phone state changes.
      */
     public void unregisterListener() {
+        mCustomSignalController.removeCallback(mCustomCallback);
         mMobileStatusTracker.setListening(false);
         mContext.getContentResolver().unregisterContentObserver(mObserver);
         mContext.unregisterReceiver(mVolteSwitchObserver);
@@ -676,7 +692,7 @@ public class MobileSignalController extends SignalController<MobileState, Mobile
         mCurrentState.roaming = isRoaming();
         if (isCarrierNetworkChangeActive()) {
             mCurrentState.iconGroup = TelephonyIcons.CARRIER_NETWORK_CHANGE;
-        } else if (isDataDisabled() && !mConfig.alwaysShowDataRatIcon) {
+        } else if (isDataDisabled() && mCustomSignalController.showDataDisabledIcon()) {
             if (mSubscriptionInfo.getSubscriptionId() != mDefaults.getDefaultDataSubId()) {
                 mCurrentState.iconGroup = TelephonyIcons.NOT_DEFAULT_DATA;
             } else {

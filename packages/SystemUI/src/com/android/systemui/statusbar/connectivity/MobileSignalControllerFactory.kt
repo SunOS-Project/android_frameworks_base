@@ -25,6 +25,7 @@ import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.statusbar.pipeline.mobile.util.MobileMappingsProxy
 import com.android.systemui.util.CarrierConfigTracker
 import javax.inject.Inject
+import org.sun.systemui.statusbar.connectivity.CustomSignalController
 
 /**
  * Factory to make MobileSignalController injectable
@@ -34,6 +35,7 @@ internal class MobileSignalControllerFactory @Inject constructor(
     val context: Context,
     val callbackHandler: CallbackHandler,
     val carrierConfigTracker: CarrierConfigTracker,
+    val customSignalController: CustomSignalController,
     val mobileMappings: MobileMappingsProxy,
 ) {
     fun createMobileSignalController(
@@ -63,6 +65,7 @@ internal class MobileSignalControllerFactory @Inject constructor(
             subscriptionDefaults,
             receiverLooper,
             carrierConfigTracker,
+            customSignalController,
             mobileTrackerFactory,
         )
     }

@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.sun.systemui.statusbar.policy.NetworkTraffic;
+
 /** A class holding the list of all the system icons that could be shown in the status bar. */
 public class StatusBarIconList {
     private final ArrayList<Slot> mSlots = new ArrayList<>();
@@ -40,6 +42,9 @@ public class StatusBarIconList {
         for (int i = 0; i < N; i++) {
             mSlots.add(new Slot(slots[i], null));
         }
+
+        // Network traffic slot
+        mSlots.add(0, new Slot(NetworkTraffic.SLOT, StatusBarIconHolder.fromNetworkTraffic()));
     }
 
     /** Returns the list of current slots. */

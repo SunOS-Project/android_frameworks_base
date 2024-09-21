@@ -19,11 +19,13 @@ package com.android.systemui.statusbar.phone.ui;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_BINDABLE;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_ICON;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_MOBILE_NEW;
+import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_NETWORK_TRAFFIC;
 import static com.android.systemui.statusbar.phone.StatusBarIconHolder.TYPE_WIFI_NEW;
 
 import android.annotation.Nullable;
 import android.content.Context;
 import android.os.Bundle;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
@@ -53,6 +55,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.sun.systemui.statusbar.policy.NetworkTraffic;
 
 /**
  * Turns info from StatusBarIconController into ImageViews in a ViewGroup.
@@ -151,6 +155,7 @@ public class IconManager implements DemoModeCommandReceiver {
             case TYPE_BINDABLE ->
                 // Safe cast, since only BindableIconHolders can set this tag on themselves
                 addBindableIcon((BindableIconHolder) holder, index);
+            case TYPE_NETWORK_TRAFFIC -> addNetworkTraffic(index, slot);
             default -> null;
         };
     }
@@ -213,6 +218,12 @@ public class IconManager implements DemoModeCommandReceiver {
         return view;
     }
 
+    protected NetworkTraffic addNetworkTraffic(int index, String slot) {
+        NetworkTraffic view = onCreateNetworkTraffic(slot);
+        mGroup.addView(view, index, onCreateLayoutParams());
+        return view;
+    }
+
     private StatusBarIconView onCreateStatusBarIconView(String slot, boolean blocked) {
         return new StatusBarIconView(mContext, slot, null, blocked);
     }
@@ -231,6 +242,12 @@ public class IconManager implements DemoModeCommandReceiver {
                         slot,
                         mMobileIconsViewModel.viewModelForSub(subId, mLocation)
                 );
+    }
+
+    private NetworkTraffic onCreateNetworkTraffic(String slot) {
+        NetworkTraffic view = new NetworkTraffic(mContext);
+        view.setPadding(4, 0, 2, 0);
+        return view;
     }
 
     protected LinearLayout.LayoutParams onCreateLayoutParams() {
@@ -255,8 +272,10 @@ public class IconManager implements DemoModeCommandReceiver {
 
     /** Called once an icon has been set. */
     public void onSetIcon(int viewIndex, StatusBarIcon icon) {
-        StatusBarIconView view = (StatusBarIconView) mGroup.getChildAt(viewIndex);
-        view.set(icon);
+        final View view = mGroup.getChildAt(viewIndex);
+        if (view instanceof StatusBarIconView) {
+            ((StatusBarIconView) view).set(icon);
+        }
     }
 
     /** Called once an icon holder has been set. */
@@ -268,6 +287,7 @@ public class IconManager implements DemoModeCommandReceiver {
             case TYPE_MOBILE_NEW:
             case TYPE_WIFI_NEW:
             case TYPE_BINDABLE:
+            case TYPE_NETWORK_TRAFFIC:
                 // Nothing, the new icons update themselves
                 return;
             default:

@@ -76,11 +76,14 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.sun.systemui.statusbar.phone.CustomHeadsUpController;
+
 @SysUISingleton
 class StatusBarNotificationPresenter implements NotificationPresenter, CommandQueue.Callbacks {
     private static final String TAG = "StatusBarNotificationPresenter";
 
     private final ActivityStarter mActivityStarter;
+    private final CustomHeadsUpController mCustomHeadsUpController;
     private final KeyguardStateController mKeyguardStateController;
     private final NotificationLockscreenUserManager mLockscreenUserManager;
     private final SysuiStatusBarStateController mStatusBarStateController;
@@ -115,6 +118,7 @@ class StatusBarNotificationPresenter implements NotificationPresenter, CommandQu
             HeadsUpManager headsUp,
             NotificationShadeWindowView statusBarWindow,
             ActivityStarter activityStarter,
+            CustomHeadsUpController customHeadsUpController,
             NotificationStackScrollLayoutController stackScrollerController,
             DozeScrimController dozeScrimController,
             NotificationShadeWindowController notificationShadeWindowController,
@@ -135,6 +139,7 @@ class StatusBarNotificationPresenter implements NotificationPresenter, CommandQu
             NotificationRemoteInputManager.Callback remoteInputManagerCallback,
             NotificationListContainer notificationListContainer) {
         mActivityStarter = activityStarter;
+        mCustomHeadsUpController = customHeadsUpController;
         mKeyguardStateController = keyguardStateController;
         mNotificationPanel = panel;
         mPanelExpansionInteractor = panelExpansionInteractor;
@@ -295,6 +300,9 @@ class StatusBarNotificationPresenter implements NotificationPresenter, CommandQu
         @Override
         public boolean suppressAwakeHeadsUp(NotificationEntry entry) {
             final StatusBarNotification sbn = entry.getSbn();
+            if (mCustomHeadsUpController.interceptHeadsUp(sbn.getPackageName())) {
+                return true;
+            }
             if (mKeyguardStateController.isOccluded()) {
                 boolean devicePublic = mLockscreenUserManager
                         .isLockscreenPublicMode(mLockscreenUserManager.getCurrentUserId());

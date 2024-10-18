@@ -460,15 +460,9 @@ constructor(
             }
             .stateIn(scope, SharingStarted.WhileSubscribed(), MobileIconCustomizationMode())
 
-    override val showVolteIcon: StateFlow<Boolean> =
-        mobileConnectionsRepo.defaultDataSubRatConfig
-            .mapLatest { it.showVolteIcon }
-            .stateIn(scope, SharingStarted.WhileSubscribed(), false)
+    override val showVolteIcon: StateFlow<Boolean> = MutableStateFlow(false)
 
-    override val showVowifiIcon: StateFlow<Boolean> =
-        mobileConnectionsRepo.defaultDataSubRatConfig
-            .mapLatest { it.showVowifiIcon }
-            .stateIn(scope, SharingStarted.WhileSubscribed(), false)
+    override val showVowifiIcon: StateFlow<Boolean> = MutableStateFlow(false)
 
     private val crossSimdisplaySingnalLevel: StateFlow<Boolean> =
         mobileConnectionsRepo.defaultDataSubRatConfig

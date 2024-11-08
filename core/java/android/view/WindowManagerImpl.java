@@ -457,6 +457,15 @@ public final class WindowManagerImpl implements WindowManager {
         }
     }
 
+    @Override
+    public void notifyBackGestureRegion(int left, int right) {
+        try {
+            WindowManagerGlobal.getWindowManagerService().notifyBackGestureRegion(
+                    left, right);
+        } catch (RemoteException e) {
+        }
+    }
+
     private static class OnFpsCallbackListenerProxy
             extends ITaskFpsCallback.Stub {
         private final Executor mExecutor;

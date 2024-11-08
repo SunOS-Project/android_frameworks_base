@@ -1273,6 +1273,8 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
     default void unregisterSystemGestureListener(String pkg, int gesture,
             ISystemGestureListener listener) {}
 
+    default void notifyBackGestureRegion(int left, int right) {}
+
     /**
      * Returns {@code true} if the key will be handled globally and not forwarded to all apps.
      *

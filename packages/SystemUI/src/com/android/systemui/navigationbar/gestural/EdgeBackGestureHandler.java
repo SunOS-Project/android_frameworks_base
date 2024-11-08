@@ -25,6 +25,7 @@ import static com.android.internal.policy.GestureNavigationSettingsObserverExt.G
 import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_1_4;
 import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_3_4;
 import static com.android.internal.policy.GestureNavigationSettingsObserverExt.GESTURE_HEIGHT_FULL;
+import static com.android.internal.util.sun.CustomUtils.PACKAGE_SYSTEMUI;
 
 import static com.android.systemui.Flags.edgebackGestureHandlerGetRunningTasksBackground;
 
@@ -34,6 +35,8 @@ import static com.android.systemui.navigationbar.gestural.Utilities.isTrackpadTh
 import static com.android.systemui.shared.system.QuickStepContract.SYSUI_STATE_TOUCHPAD_GESTURES_DISABLED;
 
 import static java.util.stream.Collectors.joining;
+
+import static org.sun.view.ISystemGestureListener.GESTURE_LEFT_RIGHT;
 
 import android.annotation.NonNull;
 import android.app.ActivityManager;
@@ -122,6 +125,8 @@ import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Provider;
 
+import org.sun.view.ISystemGestureListener;
+
 /**
  * Utility class to handle edge swipes for back gesture
  */
@@ -149,6 +154,48 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                                     ? unrestrictedOrNull : systemGestureExclusion);
                         });
                     }
+                }
+            };
+
+    private ISystemGestureListener mLeftRightGestureListener =
+            new ISystemGestureListener.Stub() {
+                @Override
+                public boolean onGesturePreTriggerBefore(int gesture, MotionEvent event) {
+                    if (gesture != GESTURE_LEFT_RIGHT) {
+                        return false;
+                    }
+                    return mUiThreadContext.runWithScissors(() -> {
+                        onMotionEvent(event);
+                        if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                            return mAllowGesture;
+                        }
+                        return mAllowGesture && mLogGesture;
+                    });
+                }
+
+                @Override
+                public void onGesturePreTrigger(int gesture, MotionEvent event) {
+                    if (gesture != GESTURE_LEFT_RIGHT) {
+                        return;
+                    }
+                    mUiThreadContext.getExecutor().execute(() -> {
+                        onMotionEvent(event);
+                    });
+                }
+
+                @Override
+                public void onGestureTriggered(int gesture, MotionEvent event) {
+                    if (gesture != GESTURE_LEFT_RIGHT) {
+                        return;
+                    }
+                    mUiThreadContext.getExecutor().execute(() -> {
+                        onMotionEvent(event);
+                    });
+                }
+
+                @Override
+                public void onGestureCanceled(int gesture) {
+                    // Do nothing
                 }
             };
 
@@ -275,9 +322,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     private boolean mIsBackGestureAllowed;
     private boolean mIsTrackpadThreeFingerSwipe;
     private boolean mIsButtonForcedVisible;
-
-    private InputMonitorCompat mInputMonitor;
-    private InputChannelCompat.InputEventReceiver mInputEventReceiver;
 
     private NavigationEdgeBackPlugin mEdgeBackPlugin;
     private BackAnimation mBackAnimation;
@@ -589,6 +633,14 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         mNonLinearFactor = getDimenFloat(res,
                 com.android.internal.R.dimen.back_progress_non_linear_factor);
         updateBackAnimationThresholds();
+
+        try {
+            mWindowManagerService.notifyBackGestureRegion(
+                    mEdgeWidthLeft + mLeftInset,
+                    mDisplaySize.x - mEdgeWidthRight - mRightInset);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to notify back gesture region", e);
+        }
     }
 
     private float getDimenFloat(Resources res, @DimenRes int resId) {
@@ -659,17 +711,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         mIsNavBarShownTransiently = isTransient;
     }
 
-    private void disposeInputChannel() {
-        if (mInputEventReceiver != null) {
-            mInputEventReceiver.dispose();
-            mInputEventReceiver = null;
-        }
-        if (mInputMonitor != null) {
-            mInputMonitor.dispose();
-            mInputMonitor = null;
-        }
-    }
-
     private void updateIsEnabled() {
         mUiThreadContext.runWithScissors(this::updateIsEnabledInner);
     }
@@ -685,7 +726,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                 return;
             }
             mIsEnabled = isEnabled;
-            disposeInputChannel();
 
             if (mEdgeBackPlugin != null) {
                 mEdgeBackPlugin.onDestroy();
@@ -702,6 +742,13 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                         mTaskStackListener);
                 DeviceConfig.removeOnPropertiesChangedListener(mOnPropertiesChangedListener);
                 mPipOptional.ifPresent(pip -> pip.setOnIsInPipStateChangedListener(null));
+
+                try {
+                    mWindowManagerService.unregisterSystemGestureListener(
+                            PACKAGE_SYSTEMUI, GESTURE_LEFT_RIGHT, mLeftRightGestureListener);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Failed to unregister system gesture listener", e);
+                }
 
                 try {
                     mWindowManagerService.unregisterSystemGestureExclusionListener(
@@ -733,10 +780,12 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                     Log.e(TAG, "Failed to register window manager callbacks", e);
                 }
 
-                // Register input event receiver
-                mInputMonitor = new InputMonitorCompat("edge-swipe", mDisplayId);
-                mInputEventReceiver = mInputMonitor.getInputReceiver(mUiThreadContext.getLooper(),
-                        mUiThreadContext.getChoreographer(), this::onInputEvent);
+                try {
+                    mWindowManagerService.registerSystemGestureListener(
+                            PACKAGE_SYSTEMUI, GESTURE_LEFT_RIGHT, mLeftRightGestureListener);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Failed to register system gesture listener", e);
+                }
 
                 // Add a nav bar panel window
                 resetEdgeBackPlugin();
@@ -1059,7 +1108,6 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
 
             // Verify if this is in within the touch region and we aren't in immersive mode, and
             // either the bouncer is showing or the notification panel is hidden
-            mInputEventReceiver.setBatchingEnabled(false);
             if (mIsTrackpadThreeFingerSwipe) {
                 // Since trackpad gestures don't have zones, this will be determined later by the
                 // direction of the gesture. {@code mIsOnLeftEdge} is set to false to begin with.
@@ -1195,16 +1243,17 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
     }
 
     private void pilferPointers() {
-        // Capture inputs
-        mInputMonitor.pilferPointers();
         // Notify FalsingManager that an intentional gesture has occurred.
         mFalsingManager.isFalseTouch(BACK_GESTURE);
-        mInputEventReceiver.setBatchingEnabled(true);
     }
 
     private boolean isButtonPressFromTrackpad(MotionEvent ev) {
         // We don't allow back for button press from the trackpad, and yet we do with a mouse.
-        int sources = InputManager.getInstance().getInputDevice(ev.getDeviceId()).getSources();
+        InputDevice device = InputManager.getInstance().getInputDevice(ev.getDeviceId());
+        if (device == null) {
+            return false;
+        }
+        int sources = device.getSources();
         int sourceTrackpad = (SOURCE_MOUSE | SOURCE_TOUCHPAD);
         return (sources & sourceTrackpad) == sourceTrackpad && ev.getButtonState() != 0;
     }
@@ -1293,6 +1342,14 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
         }
         updateBackAnimationThresholds();
         updateBackGestureHeight();
+
+        try {
+            mWindowManagerService.notifyBackGestureRegion(
+                    mEdgeWidthLeft + mLeftInset,
+                    mDisplaySize.x - mEdgeWidthRight - mRightInset);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to notify back gesture region", e);
+        }
     }
 
     private void updateBackAnimationThresholds() {

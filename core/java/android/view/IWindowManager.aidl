@@ -1080,6 +1080,11 @@ interface IWindowManager
     oneway void unregisterSystemGestureListener(in String pkg, int gesture, in ISystemGestureListener listener);
 
     /**
+    * Notify back gesture region to system gesture listener
+    */
+    oneway void notifyBackGestureRegion(int left, int right);
+
+    /**
      * Registers a DecorView gesture listener for a given display.
      */
     @JavaPassthrough(annotation = "@android.annotation.RequiresPermission(android.Manifest"

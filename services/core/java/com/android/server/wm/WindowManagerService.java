@@ -10247,6 +10247,11 @@ public class WindowManagerService extends IWindowManager.Stub
         mPolicy.unregisterSystemGestureListener(pkg, gesture, listener);
     }
 
+    @Override
+    public void notifyBackGestureRegion(int left, int right) {
+        mPolicy.notifyBackGestureRegion(left, right);
+    }
+
     void onProcessActivityVisibilityChanged(int uid, boolean visible) {
         mScreenRecordingCallbackController.onProcessActivityVisibilityChanged(uid, visible);
     }

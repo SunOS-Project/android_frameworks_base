@@ -6167,6 +6167,11 @@ public interface WindowManager extends ViewManager {
         throw new UnsupportedOperationException();
     }
 
+    /** @hide */
+    default void notifyBackGestureRegion(int left, int right) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Take a snapshot using the same path that's used for Recents. This is used for Testing only.
      *

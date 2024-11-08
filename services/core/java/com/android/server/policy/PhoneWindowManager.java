@@ -5379,6 +5379,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         PhoneWindowManagerExt.getInstance().unregisterSystemGestureListener(pkg, gesture, listener);
     }
 
+    @Override
+    public void notifyBackGestureRegion(int left, int right) {
+        PhoneWindowManagerExt.getInstance().notifyBackGestureRegion(left, right);
+    }
+
     private boolean shouldDispatchInputWhenNonInteractive(int displayId, int keyCode) {
         // Apply the default display policy to unknown displays as well.
         final boolean isDefaultDisplay = displayId == DEFAULT_DISPLAY

@@ -737,7 +737,7 @@ public class InputMethodService extends AbstractInputMethodService {
         }
         mNavigationBarController.updateTouchableInsets(mTmpInsets, info);
 
-        if (mInputFrame != null) {
+        if (mInputFrame != null && !InputMethodServiceExt.getAllowBackGestureOnIme()) {
             setImeExclusionRect(mTmpInsets.visibleTopInsets);
         }
     };

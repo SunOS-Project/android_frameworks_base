@@ -106,6 +106,21 @@ public abstract class InputManagerInternal {
      */
     public abstract void setDisplayEligibilityForPointerCapture(int displayId, boolean isEligible);
 
+    /**
+     * Notify that follow motion events are system gestures.
+     */
+    public abstract void notifySystemGestureDown();
+
+    /**
+     * Wake up looper to dispatch pending system gestures.
+     */
+    public abstract void dispatchPendingSystemGesture();
+
+    /**
+     * Wake up looper to drop pending system gestures.
+     */
+    public abstract void dropPendingSystemGesture();
+
     /** Sets the visibility of the cursor. */
     public abstract void setPointerIconVisible(boolean visible, int displayId);
 

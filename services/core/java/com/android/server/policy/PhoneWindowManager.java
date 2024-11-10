@@ -5362,9 +5362,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     }
 
     @Override
-    public int interceptMotionBeforeQueueing(MotionEvent event) {
+    public boolean interceptMotionBeforeQueueing(MotionEvent event) {
         if (!mSystemBooted) {
-            return WindowManagerPolicy.SYSTEM_GESTURE_NONE;
+            return false;
         }
         return PhoneWindowManagerExt.getInstance().interceptMotionBeforeQueueing(event);
     }

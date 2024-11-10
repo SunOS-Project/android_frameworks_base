@@ -162,13 +162,6 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
     /** Layer for the screen off animation */
     int COLOR_FADE_LAYER = 0x40000001;
 
-    int SYSTEM_GESTURE_NONE = 0x01;
-    int SYSTEM_GESTURE_DOWN = 0x02;
-    int SYSTEM_GESTURE_MOVE = 0x04;
-    int SYSTEM_GESTURE_MOVE_TRIGGERED = 0x08;
-    int SYSTEM_GESTURE_RESET = 0x10;
-    int SYSTEM_GESTURE_CANCELED = 0x20;
-
     /**
      * Register shortcuts for window manager to dispatch.
      * Shortcut code is packed as (metaState << Integer.SIZE) | keyCode
@@ -1270,8 +1263,8 @@ public interface WindowManagerPolicy extends WindowManagerPolicyConstants {
      */
     default void onDefaultDisplayFocusChangedLw(WindowState newFocus) {}
 
-    default int interceptMotionBeforeQueueing(MotionEvent event) {
-        return SYSTEM_GESTURE_NONE;
+    default boolean interceptMotionBeforeQueueing(MotionEvent event) {
+        return false;
     }
 
     default void registerSystemGestureListener(String pkg, int gesture,

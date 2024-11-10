@@ -551,7 +551,7 @@ final class InputMonitor {
         }
     }
 
-    public int interceptMotionBeforeQueueing(MotionEvent event) {
+    public boolean interceptMotionBeforeQueueing(MotionEvent event) {
         return mService.mPolicy.interceptMotionBeforeQueueing(event);
     }
 

@@ -261,6 +261,18 @@ class InputController {
         mInputManagerInternal.setDisplayEligibilityForPointerCapture(displayId, isEligible);
     }
 
+    void notifySystemGestureDown() {
+        mInputManagerInternal.notifySystemGestureDown();
+    }
+
+    void dispatchPendingSystemGesture() {
+        mInputManagerInternal.dispatchPendingSystemGesture();
+    }
+
+    void dropPendingSystemGesture() {
+        mInputManagerInternal.dropPendingSystemGesture();
+    }
+
     void setDisplayImePolicy(int displayId, @WindowManager.DisplayImePolicy int policy) {
         mWindowManager.setDisplayImePolicy(displayId, policy);
     }

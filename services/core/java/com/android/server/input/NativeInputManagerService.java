@@ -208,6 +208,12 @@ interface NativeInputManagerService {
 
     void setDisplayEligibilityForPointerCapture(int displayId, boolean enabled);
 
+    void notifySystemGestureDown();
+
+    void dispatchPendingSystemGesture();
+
+    void dropPendingSystemGesture();
+
     void setMotionClassifierEnabled(boolean enabled);
 
     void setKeyRepeatConfiguration(int timeoutMs, int delayMs);
@@ -496,6 +502,15 @@ interface NativeInputManagerService {
 
         @Override
         public native void setDisplayEligibilityForPointerCapture(int displayId, boolean enabled);
+
+        @Override
+        public native void notifySystemGestureDown();
+
+        @Override
+        public native void dispatchPendingSystemGesture();
+
+        @Override
+        public native void dropPendingSystemGesture();
 
         @Override
         public native void setMotionClassifierEnabled(boolean enabled);

@@ -167,7 +167,7 @@ final class InputManagerCallback implements InputManagerService.WindowManagerCal
     }
 
     @Override
-    public int interceptMotionBeforeQueueing(MotionEvent event) {
+    public boolean interceptMotionBeforeQueueing(MotionEvent event) {
         return mService.mPolicy.interceptMotionBeforeQueueing(event);
     }
 

@@ -243,13 +243,6 @@ static SpriteIcon toSpriteIcon(PointerIcon pointerIcon) {
 
 enum {
     WM_ACTION_PASS_TO_USER = 1,
-
-    WM_ACTION_SYSTEM_GESTURE_NONE = 1,
-    WM_ACTION_SYSTEM_GESTURE_DOWN = 2,
-    WM_ACTION_SYSTEM_GESTURE_MOVE = 4,
-    WM_ACTION_SYSTEM_GESTURE_MOVE_TRIGGERED = 8,
-    WM_ACTION_SYSTEM_GESTURE_RESET = 16,
-    WM_ACTION_SYSTEM_GESTURE_CANCELED = 32,
 };
 
 static std::string getStringElementFromJavaArray(JNIEnv* env, jobjectArray array, jsize index) {
@@ -1535,23 +1528,15 @@ void NativeInputManager::interceptMotionBeforeQueueingExt(const MotionEvent& mot
         return;
     }
 
-    const jint wmActions = env->CallIntMethod(mServiceObj,
+    const jboolean intercept = env->CallIntMethod(mServiceObj,
             gServiceClassInfo.interceptMotionBeforeQueueing, motionEventObj.get());
     android_view_MotionEvent_recycle(env, motionEventObj.get());
     if (checkAndClearExceptionFromCallback(env, "interceptMotionBeforeQueueing")) {
         return;
     }
 
-    if ((wmActions & WM_ACTION_SYSTEM_GESTURE_DOWN) != 0) {
-        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_DOWN;
-    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_MOVE) != 0) {
-        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_MOVE;
-    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_MOVE_TRIGGERED) != 0) {
-        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_MOVE_TRIGGERED;
-    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_RESET) != 0) {
-        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_RESET;
-    } else if ((wmActions & WM_ACTION_SYSTEM_GESTURE_CANCELED) != 0) {
-        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE_CANCELED;
+    if (intercept) {
+        policyFlags |= POLICY_FLAG_SYSTEM_GESTURE;
     }
 }
 
@@ -2565,6 +2550,27 @@ static void nativeSetDisplayEligibilityForPointerCapture(JNIEnv* env, jobject na
             .setDisplayEligibilityForPointerCapture(ui::LogicalDisplayId{displayId}, isEligible);
 }
 
+static void nativeNotifySystemGestureDown(JNIEnv* env, jobject nativeImplObj) {
+    NativeInputManager* im = getNativeInputManager(env, nativeImplObj);
+    im->getInputManager()
+            ->getDispatcher()
+            .notifySystemGestureDown();
+}
+
+static void nativeDispatchPendingSystemGesture(JNIEnv* env, jobject nativeImplObj) {
+    NativeInputManager* im = getNativeInputManager(env, nativeImplObj);
+    im->getInputManager()
+            ->getDispatcher()
+            .dispatchPendingSystemGesture();
+}
+
+static void nativeDropPendingSystemGesture(JNIEnv* env, jobject nativeImplObj) {
+    NativeInputManager* im = getNativeInputManager(env, nativeImplObj);
+    im->getInputManager()
+            ->getDispatcher()
+            .dropPendingSystemGesture();
+}
+
 static void nativeChangeUniqueIdAssociation(JNIEnv* env, jobject nativeImplObj) {
     NativeInputManager* im = getNativeInputManager(env, nativeImplObj);
     im->getInputManager()->getReader().requestRefreshConfiguration(
@@ -2852,6 +2858,12 @@ static const JNINativeMethod gInputManagerMethods[] = {
         {"changeKeyboardLayoutAssociation", "()V", (void*)changeKeyboardLayoutAssociation},
         {"setDisplayEligibilityForPointerCapture", "(IZ)V",
          (void*)nativeSetDisplayEligibilityForPointerCapture},
+        {"notifySystemGestureDown", "()V",
+         (void*)nativeNotifySystemGestureDown},
+        {"dispatchPendingSystemGesture", "()V",
+         (void*)nativeDispatchPendingSystemGesture},
+        {"dropPendingSystemGesture", "()V",
+         (void*)nativeDropPendingSystemGesture},
         {"setMotionClassifierEnabled", "(Z)V", (void*)nativeSetMotionClassifierEnabled},
         {"setKeyRepeatConfiguration", "(II)V", (void*)nativeSetKeyRepeatConfiguration},
         {"getSensorList", "(I)[Landroid/hardware/input/InputSensorInfo;",
@@ -2960,7 +2972,7 @@ int register_android_server_InputManager(JNIEnv* env) {
 
     GET_METHOD_ID(gServiceClassInfo.interceptMotionBeforeQueueing, clazz,
                   "interceptMotionBeforeQueueing",
-                  "(Landroid/view/MotionEvent;)I");
+                  "(Landroid/view/MotionEvent;)Z");
 
     GET_METHOD_ID(gServiceClassInfo.interceptKeyBeforeDispatching, clazz,
             "interceptKeyBeforeDispatching",

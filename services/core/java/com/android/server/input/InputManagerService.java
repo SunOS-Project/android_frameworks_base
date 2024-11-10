@@ -1322,6 +1322,18 @@ public class InputManagerService extends IInputManager.Stub
         mNative.setDisplayEligibilityForPointerCapture(displayId, isEligible);
     }
 
+    private void notifySystemGestureDown() {
+        mNative.notifySystemGestureDown();
+    }
+
+    private void dispatchPendingSystemGesture() {
+        mNative.dispatchPendingSystemGesture();
+    }
+
+    private void dropPendingSystemGesture() {
+        mNative.dropPendingSystemGesture();
+    }
+
     private static class VibrationInfo {
         private final long[] mPattern;
         private final int[] mAmplitudes;
@@ -2406,7 +2418,7 @@ public class InputManagerService extends IInputManager.Stub
 
     // Native callback.
     @SuppressWarnings("unused")
-    private int interceptMotionBeforeQueueing(MotionEvent event) {
+    private boolean interceptMotionBeforeQueueing(MotionEvent event) {
         return mWindowManagerCallbacks.interceptMotionBeforeQueueing(event);
     }
 
@@ -2764,7 +2776,7 @@ public class InputManagerService extends IInputManager.Stub
         /**
          * Only used for system gesture listener
          */
-        int interceptMotionBeforeQueueing(MotionEvent event);
+        boolean interceptMotionBeforeQueueing(MotionEvent event);
 
         /**
          * Provides an opportunity for the window manager policy to intercept early motion event
@@ -3112,6 +3124,21 @@ public class InputManagerService extends IInputManager.Stub
         @Override
         public void setDisplayEligibilityForPointerCapture(int displayId, boolean isEligible) {
             InputManagerService.this.setDisplayEligibilityForPointerCapture(displayId, isEligible);
+        }
+
+        @Override
+        public void notifySystemGestureDown() {
+            InputManagerService.this.notifySystemGestureDown();
+        }
+
+        @Override
+        public void dispatchPendingSystemGesture() {
+            InputManagerService.this.dispatchPendingSystemGesture();
+        }
+
+        @Override
+        public void dropPendingSystemGesture() {
+            InputManagerService.this.dropPendingSystemGesture();
         }
 
         @Override

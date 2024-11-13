@@ -152,15 +152,13 @@ class InsetsPolicy {
     }
 
     void showTransient(@InsetsType int types, boolean isGestureOnSystemBar) {
-        showTransient(types, isGestureOnSystemBar, false);
+        showTransient(types, isGestureOnSystemBar, -1);
     }
 
-    void showTransient(@InsetsType int types, boolean isGestureOnSystemBar,
-            boolean swipeOnStatusBar) {
-        final boolean isGestureLocked = GameModeController.getInstance().isGestureLocked(!swipeOnStatusBar);
-        final boolean isStatusBarLocked = GameModeController.getInstance().shouldLockStatusbar();
+    void showTransient(@InsetsType int types, boolean isGestureOnSystemBar, int gestureType) {
         @InsetsType int showingTransientTypes = mShowingTransientTypes;
         final InsetsState rawState = mStateController.getRawInsetsState();
+        final boolean isGestureLocked = GameModeController.getInstance().isGestureLocked(gestureType);
         for (int i = rawState.sourceSize() - 1; i >= 0; i--) {
             final InsetsSource source = rawState.sourceAt(i);
             if (source.isVisible()) {
@@ -170,13 +168,12 @@ class InsetsPolicy {
             if ((source.getType() & types) == 0) {
                 continue;
             }
-            if (GameModeController.getInstance().interceptShowTransient(
-                    type, swipeOnStatusBar, isGestureLocked, isStatusBarLocked)) {
+            if (isGestureLocked) {
                 continue;
             }
             showingTransientTypes |= type;
         }
-        if (isGestureLocked && !swipeOnStatusBar) {
+        if (isGestureLocked) {
             GameModeController.getInstance().warnGestureLocked();
         }
         if (mShowingTransientTypes != showingTransientTypes) {

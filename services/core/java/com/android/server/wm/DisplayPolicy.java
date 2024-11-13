@@ -160,6 +160,8 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.sun.server.app.GameModeController;
+
 /**
  * The policy that provides the basic behaviors and states of a display to show UI.
  */
@@ -2454,7 +2456,7 @@ public class DisplayPolicy {
         if (controlTarget.canShowTransient()) {
             // Show transient bars if they are hidden; restore position if they are visible.
             mDisplayContent.getInsetsPolicy().showTransient(SHOW_TYPES_FOR_SWIPE,
-                    isGestureOnSystemBar, swipeTarget == mStatusBar);
+                    isGestureOnSystemBar, getGestureTypeFromTarget(swipeTarget));
             controlTarget.showInsets(restorePositionTypes, false /* fromIme */,
                     null /* statsToken */);
         } else {
@@ -2476,6 +2478,16 @@ public class DisplayPolicy {
         } else {
             mImmersiveModeConfirmation.confirmCurrentPrompt();
         }
+    }
+
+    private int getGestureTypeFromTarget(WindowState swipeTarget) {
+        if (swipeTarget == mStatusBar) {
+            return GameModeController.GESTURE_TYPE_STATUS_BAR;
+        }
+        if (swipeTarget == mNavigationBar) {
+            return GameModeController.GESTURE_TYPE_NAVIGATION_BAR;
+        }
+        return GameModeController.GESTURE_TYPE_BACK;
     }
 
     boolean isKeyguardShowing() {

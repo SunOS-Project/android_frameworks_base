@@ -52,6 +52,8 @@ import com.android.systemui.util.leak.RotationUtils;
 import java.util.Objects;
 
 import org.sun.systemui.statusbar.policy.Offset;
+import org.sun.systemui.statusbar.ticker.MarqueeTicker;
+import org.sun.systemui.statusbar.ticker.MarqueeTickerView;
 
 public class PhoneStatusBarView extends FrameLayout {
     private static final String TAG = "PhoneStatusBarView";
@@ -66,6 +68,8 @@ public class PhoneStatusBarView extends FrameLayout {
     @Nullable
     private View mCutoutSpace;
     @Nullable
+    private View mTickerView;
+    @Nullable
     private DisplayCutout mDisplayCutout;
     @Nullable
     private Rect mDisplaySize;
@@ -74,6 +78,8 @@ public class PhoneStatusBarView extends FrameLayout {
     private ViewGroup mStatusBarContents = null;
     @Nullable
     private ViewGroup mStatusBarCenterClock = null;
+    @Nullable
+    private ViewGroup mTickerContainer = null;
     @Nullable
     private Gefingerpoken mTouchEventHandler;
     private int mDensity;
@@ -121,6 +127,7 @@ public class PhoneStatusBarView extends FrameLayout {
         mCutoutSpace = findViewById(R.id.cutout_space_view);
         mStatusBarContents = (ViewGroup) findViewById(R.id.status_bar_contents);
         mStatusBarCenterClock = (ViewGroup) findViewById(R.id.center_clock_layout);
+        mTickerContainer = (ViewGroup) findViewById(R.id.ticker_container);
 
         updateResources();
     }
@@ -294,6 +301,12 @@ public class PhoneStatusBarView extends FrameLayout {
                 getResources().getDimensionPixelSize(R.dimen.status_bar_padding_end),
                 0);
 
+        mTickerContainer.setPaddingRelative(
+                statusBarPaddingStart,
+                getResources().getDimensionPixelSize(R.dimen.status_bar_padding_top),
+                getResources().getDimensionPixelSize(R.dimen.status_bar_padding_end),
+                0);
+
         findViewById(R.id.notification_lights_out)
                 .setPaddingRelative(0, statusBarPaddingStart, 0, 0);
 
@@ -309,6 +322,7 @@ public class PhoneStatusBarView extends FrameLayout {
         updateStatusBarHeight();
         updateCutoutLocation();
         updateSafeInsets();
+        setDisplayToTicker(mDisplayCutout != null ? mDisplayCutout.getBoundingRectTop() : new Rect());
     }
 
     private void updateCutoutLocation() {
@@ -353,5 +367,31 @@ public class PhoneStatusBarView extends FrameLayout {
 
     private void updateWindowHeight() {
         mStatusBarWindowController.refreshStatusBarHeight();
+    }
+
+    public void setTickerView(View tickerView) {
+        mTickerView = tickerView;
+        setDisplayToTicker(mDisplayCutout != null ? mDisplayCutout.getBoundingRectTop() : new Rect());
+    }
+
+    private boolean isCenterDisplayCutout() {
+        return mCutoutSpace.getVisibility() == View.VISIBLE;
+    }
+
+    public void setDisplayToTicker(Rect rect) {
+        if (mTickerView == null || mDisplaySize == null || rect == null) {
+            return;
+        }
+        final MarqueeTickerView tickerText = (MarqueeTickerView) mTickerView.findViewById(R.id.tickerText);
+        final int tickerPaddingStart = getResources().getDimensionPixelSize(R.dimen.status_bar_padding_start);
+        final int tickerPaddingEnd = getResources().getDimensionPixelSize(R.dimen.status_bar_padding_end);
+        final MarqueeTicker marqueeTicker = tickerText.getTicker();
+        final int screenWidth = mDisplaySize.width();
+        final int showTickerWidth = screenWidth - (tickerPaddingStart + tickerPaddingEnd);
+        final int leftRect = screenWidth / 2 - tickerPaddingStart - rect.width() / 2;
+        final int rightRect = leftRect + rect.width();
+        marqueeTicker.setDisplayCutout(isCenterDisplayCutout(), leftRect, rightRect,
+                showTickerWidth, mRotationOrientation != RotationUtils.ROTATION_LANDSCAPE,
+                isCenterDisplayCutout(), 0);
     }
 }

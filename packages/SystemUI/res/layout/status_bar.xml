@@ -60,58 +60,69 @@
             android:clipChildren="false"
             android:layout_weight="1">
 
-            <!-- Container that is wrapped around the views on the start half of the status bar.
-                 Its width will change with the number of visible children and sub-children.
-                 It is useful when we want to know the visible bounds of the content. -->
-            <FrameLayout
-                android:id="@+id/status_bar_start_side_content"
-                android:layout_width="wrap_content"
+            <org.sun.systemui.statusbar.ticker.AdvertSwitcherView
+                android:id="@+id/status_bar_switcher"
+                android:clipChildren="false"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center_vertical|start"
-                android:clipChildren="false">
-
-                <include layout="@layout/heads_up_status_bar_layout" />
-
-                <!-- The alpha of the start side is controlled by PhoneStatusBarTransitions, and the
-                     individual views are controlled by StatusBarManager disable flags DISABLE_CLOCK
-                     and DISABLE_NOTIFICATION_ICONS, respectively -->
-                <LinearLayout
-                    android:id="@+id/status_bar_start_side_except_heads_up"
+                android:inAnimation="@anim/slide_in_bottom"
+                android:outAnimation="@anim/slide_out_up">
+                <!-- Container that is wrapped around the views on the start half of the status bar.
+                    Its width will change with the number of visible children and sub-children.
+                    It is useful when we want to know the visible bounds of the content. -->
+                <FrameLayout
+                    android:id="@+id/status_bar_start_side_content"
+                    android:layout_width="wrap_content"
                     android:layout_height="match_parent"
-                    android:layout_width="match_parent"
                     android:layout_gravity="center_vertical|start"
                     android:clipChildren="false">
-                    <ViewStub
-                        android:id="@+id/operator_name_stub"
-                        android:layout_width="wrap_content"
+
+                    <include layout="@layout/heads_up_status_bar_layout" />
+
+                    <!-- The alpha of the start side is controlled by PhoneStatusBarTransitions, and the
+                        individual views are controlled by StatusBarManager disable flags DISABLE_CLOCK
+                        and DISABLE_NOTIFICATION_ICONS, respectively -->
+                    <LinearLayout
+                        android:id="@+id/status_bar_start_side_except_heads_up"
                         android:layout_height="match_parent"
-                        android:layout="@layout/operator_name" />
+                        android:layout_width="match_parent"
+                        android:layout_gravity="center_vertical|start"
+                        android:clipChildren="false">
+                        <ViewStub
+                            android:id="@+id/operator_name_stub"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout="@layout/operator_name" />
 
-                    <com.android.systemui.statusbar.policy.Clock
-                        android:id="@+id/clock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="@dimen/status_bar_system_icons_height"
-                        android:layout_gravity="center_vertical"
-                        android:textAppearance="@style/TextAppearance.StatusBar.Clock"
-                        android:singleLine="true"
-                        android:visibility="gone"
-                        android:paddingStart="@dimen/status_bar_left_clock_starting_padding"
-                        android:paddingEnd="@dimen/status_bar_left_clock_end_padding"
-                        android:gravity="center_vertical|start"
-                    />
+                        <com.android.systemui.statusbar.policy.Clock
+                            android:id="@+id/clock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="@dimen/status_bar_system_icons_height"
+                            android:layout_gravity="center_vertical"
+                            android:textAppearance="@style/TextAppearance.StatusBar.Clock"
+                            android:singleLine="true"
+                            android:visibility="gone"
+                            android:paddingStart="@dimen/status_bar_left_clock_starting_padding"
+                            android:paddingEnd="@dimen/status_bar_left_clock_end_padding"
+                            android:gravity="center_vertical|start"
+                        />
 
-                    <include layout="@layout/ongoing_activity_chip" />
+                        <include layout="@layout/ongoing_activity_chip" />
 
-                    <com.android.systemui.statusbar.AlphaOptimizedFrameLayout
-                        android:id="@+id/notification_icon_area"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:paddingStart="4sp"
-                        android:orientation="horizontal"
-                        android:clipChildren="false"/>
+                        <com.android.systemui.statusbar.AlphaOptimizedFrameLayout
+                            android:id="@+id/notification_icon_area"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:paddingStart="4sp"
+                            android:orientation="horizontal"
+                            android:clipChildren="false"/>
 
-                </LinearLayout>
-            </FrameLayout>
+                    </LinearLayout>
+                </FrameLayout>
+
+                <include layout="@layout/status_bar_ticker_ext" />
+
+            </org.sun.systemui.statusbar.ticker.AdvertSwitcherView>
         </FrameLayout>
 
         <!-- Space should cover the notch (if it exists) and let other views lay out around it -->
@@ -189,5 +200,19 @@
             android:singleLine="true"
             />
     </com.android.keyguard.AlphaOptimizedLinearLayout>
+
+    <FrameLayout
+        android:id="@+id/ticker_container"
+        android:layout="@layout/status_bar_ticker"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ViewStub
+            android:id="@+id/ticker_stub"
+            android:layout="@layout/status_bar_ticker"
+            android:inflatedId="@+id/ticker"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
 
 </com.android.systemui.statusbar.phone.PhoneStatusBarView>

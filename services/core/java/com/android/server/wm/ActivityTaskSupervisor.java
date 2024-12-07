@@ -64,7 +64,6 @@ import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_CLEANUP
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_IDLE;
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_RECENTS;
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_ROOT_TASK;
-import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_SERVICETRACKER;
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.DEBUG_SWITCH;
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.POSTFIX_IDLE;
 import static com.android.server.wm.ActivityTaskManagerDebugConfig.POSTFIX_PAUSE;
@@ -176,8 +175,6 @@ import java.util.function.Predicate;
 import java.util.Arrays;
 import android.os.AsyncTask;
 
-import vendor.qti.hardware.servicetracker.V1_2.IServicetracker;
-
 // TODO: This class has become a dumping ground. Let's
 // - Move things relating to the hierarchy to RootWindowContainer
 // - Move things relating to activity life cycles to maybe a new class called ActivityLifeCycler
@@ -232,9 +229,6 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
     private static final int REPORT_PIP_MODE_CHANGED_MSG = FIRST_SUPERVISOR_TASK_MSG + 15;
     private static final int START_HOME_MSG = FIRST_SUPERVISOR_TASK_MSG + 16;
     private static final int TOP_RESUMED_STATE_LOSS_TIMEOUT_MSG = FIRST_SUPERVISOR_TASK_MSG + 17;
-
-    private static final String AIDL_SERVICE =
-            "vendor.qti.hardware.servicetrackeraidl.IServicetracker/default";
 
     // Used to indicate that windows of activities should be preserved during the resize.
     static final boolean PRESERVE_WINDOWS = true;
@@ -300,8 +294,6 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
 
     private AppOpsManager mAppOpsManager;
     private VirtualDeviceManager mVirtualDeviceManager;
-
-    private IServicetracker mServicetracker;
 
     /** Common synchronization logic used to save things to disks. */
     PersisterQueue mPersisterQueue;
@@ -499,29 +491,6 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
 
     void onSystemReady() {
         mLaunchParamsPersister.onSystemReady();
-    }
-
-    public IServicetracker getServicetrackerInstance() {
-        if (ServiceManager.isDeclared(AIDL_SERVICE)) return null;
-        if (mServicetracker == null) {
-            try {
-                mServicetracker = IServicetracker.getService(false);
-            } catch (java.util.NoSuchElementException e) {
-                // Service doesn't exist or cannot be opened logged below
-            } catch (RemoteException e) {
-                if (DEBUG_SERVICETRACKER) Slog.e(TAG, "Failed to get servicetracker interface", e);
-                return null;
-            }
-            if (mServicetracker == null) {
-                if (DEBUG_SERVICETRACKER) Slog.w(TAG, "servicetracker HIDL not available");
-                return null;
-            }
-        }
-        return mServicetracker;
-    }
-
-    public void destroyServicetrackerInstance() {
-        mServicetracker = null;
     }
 
     void onUserUnlocked(int userId) {

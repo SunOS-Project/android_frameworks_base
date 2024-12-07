@@ -287,7 +287,7 @@ public class RecordingService extends Service implements ScreenMediaRecorderList
                 break;
             case ACTION_DELETE:
                 ContentResolver resolver = getContentResolver();
-                Uri uri = Uri.parse(intent.getStringExtra(EXTRA_PATH));
+                Uri uri = intent.getParcelableExtra(EXTRA_PATH, Uri.class);
                 resolver.delete(uri, null, null);
 
                 Toast.makeText(

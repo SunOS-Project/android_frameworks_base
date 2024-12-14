@@ -183,6 +183,7 @@ class StatusBarNotificationPresenter implements NotificationPresenter, CommandQu
             mNotifShadeEventSource.setShadeEmptiedCallback(this::maybeClosePanelForShadeEmptied);
             mNotifShadeEventSource.setNotifRemovedByUserCallback(this::maybeEndAmbientPulse);
             if (VisualInterruptionRefactor.isEnabled()) {
+                visualInterruptionDecisionProvider.addFilter(mCustomHeadsUpFilter);
                 visualInterruptionDecisionProvider.addCondition(mAlertsDisabledCondition);
                 visualInterruptionDecisionProvider.addCondition(mVrModeCondition);
                 visualInterruptionDecisionProvider.addFilter(mNeedsRedactionFilter);
@@ -335,6 +336,14 @@ class StatusBarNotificationPresenter implements NotificationPresenter, CommandQu
             return !mNotificationAlertsInteractor.areNotificationAlertsEnabled();
         }
     };
+
+    private final VisualInterruptionFilter mCustomHeadsUpFilter =
+            new VisualInterruptionFilter(Set.of(PEEK), "custom headsup controller policy") {
+                @Override
+                public boolean shouldSuppress(@NonNull NotificationEntry entry) {
+                    return mCustomHeadsUpController.interceptHeadsUp(entry.getSbn().getPackageName());
+                }
+            };
 
     private final VisualInterruptionCondition mAlertsDisabledCondition =
             new VisualInterruptionCondition(Set.of(PEEK, PULSE, BUBBLE),

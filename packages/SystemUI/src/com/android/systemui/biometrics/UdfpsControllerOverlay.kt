@@ -455,12 +455,14 @@ class UdfpsControllerOverlay @JvmOverloads constructor(
         udfpsHelper?.removeDimLayer()
         getTouchOverlay()?.apply {
             if (udfpsViewPerformance()) {
-                if (this.parent != null) {
+                if (this.parent != null && this.isAttachedToWindow) {
                     windowManager.removeView(this)
                 }
                 Trace.setCounter("UdfpsAddView", 0)
             } else {
-                windowManager.removeView(this)
+                if (this.isAttachedToWindow) {
+                    windowManager.removeView(this)
+                }
             }
             setOnTouchListener(null)
             setOnHoverListener(null)

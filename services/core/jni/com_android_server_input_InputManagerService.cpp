@@ -1528,7 +1528,7 @@ void NativeInputManager::interceptMotionBeforeQueueingExt(const MotionEvent& mot
         return;
     }
 
-    const jboolean intercept = env->CallIntMethod(mServiceObj,
+    const jboolean intercept = env->CallBooleanMethod(mServiceObj,
             gServiceClassInfo.interceptMotionBeforeQueueing, motionEventObj.get());
     android_view_MotionEvent_recycle(env, motionEventObj.get());
     if (checkAndClearExceptionFromCallback(env, "interceptMotionBeforeQueueing")) {

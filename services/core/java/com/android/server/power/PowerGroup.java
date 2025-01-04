@@ -229,7 +229,7 @@ public class PowerGroup {
         } finally {
             Trace.traceEnd(Trace.TRACE_TAG_POWER);
         }
-        PowerManagerServiceExt.getInstance().onWakeUp(reason);
+        PowerManagerServiceExt.getInstance().onWakeUp(reason, details);
     }
 
     boolean dreamLocked(long eventTime, int uid, boolean allowWake) {

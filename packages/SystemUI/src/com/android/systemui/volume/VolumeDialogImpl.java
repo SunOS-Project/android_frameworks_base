@@ -2603,8 +2603,9 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
 
                 if (row.stream == mActiveStream) {
                     final long now = SystemClock.uptimeMillis();
-                    if (now - mLastStreamVolumeChangeTimestamp < HAPTIC_LONG_PRESS_INTERVAL) {
-                        if (newProgress == row.slider.getMin() || newProgress == row.slider.getMax()) {
+                    final boolean reachedEdge = newProgress == row.slider.getMin() || newProgress == row.slider.getMax();
+                    if (now - mLastStreamVolumeChangeTimestamp < HAPTIC_LONG_PRESS_INTERVAL || reachedEdge) {
+                        if (reachedEdge) {
                             mLastHapticTimestamp = now;
                             row.slider.performHapticFeedbackExt(new VibrationExtInfo.Builder()
                                     .setEffectId(SLIDER_EDGE)

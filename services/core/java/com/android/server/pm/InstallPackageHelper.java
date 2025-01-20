@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+/*
+ * ​​​​​Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 package com.android.server.pm;
 
 import static android.content.pm.Flags.disallowSdkLibsToBeApps;
@@ -85,6 +89,7 @@ import static com.android.server.pm.PackageManagerService.SCAN_NO_DEX;
 import static com.android.server.pm.PackageManagerService.SCAN_REQUIRE_KNOWN;
 import static com.android.server.pm.PackageManagerService.SCAN_UPDATE_SIGNATURE;
 import static com.android.server.pm.PackageManagerService.TAG;
+import static com.android.server.pm.PackageInstallerSession.MAX_INSTALL_DURATION;
 import static com.android.server.pm.PackageManagerServiceUtils.comparePackageSignatures;
 import static com.android.server.pm.PackageManagerServiceUtils.compareSignatures;
 import static com.android.server.pm.PackageManagerServiceUtils.compressedFileExists;
@@ -1005,10 +1010,20 @@ final class InstallPackageHelper {
     }
 
     void installPackagesTraced(List<InstallRequest> requests) {
+        BoostFramework mPerf = new BoostFramework();
         try (PackageManagerTracedLock installLock = mPm.mInstallLock.acquireLock()) {
             Trace.traceBegin(TRACE_TAG_PACKAGE_MANAGER, "installPackages");
+            if (mPerf != null) {
+                mPerf.perfHint(BoostFramework.VENDOR_HINT_PACKAGE_INSTALL_BOOST,
+                        null, MAX_INSTALL_DURATION, -1);
+                if (DEBUG_INSTALL) Slog.d(TAG, "installPackageLI boost");
+            }
             installPackagesLI(requests);
         } finally {
+            if (mPerf != null) {
+                mPerf.perfLockRelease();
+                if (DEBUG_INSTALL) Slog.d(TAG, "installPackageLI boost release");
+            }
             Trace.traceEnd(TRACE_TAG_PACKAGE_MANAGER);
         }
     }

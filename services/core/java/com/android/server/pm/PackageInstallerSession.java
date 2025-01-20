@@ -13,6 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * ​​​​​Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Copyright (c) 2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
+ */
 
 package com.android.server.pm;
 
@@ -411,7 +416,8 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
     */
     private BoostFramework mPerfBoostInstall = null;
     private boolean mIsPerfLockAcquired = false;
-    private final int MAX_INSTALL_DURATION = 20000;
+    /** Default millisecond limit for installation boost*/
+    public static final int MAX_INSTALL_DURATION = 20000;
 
     final int sessionId;
     final int userId;
@@ -1883,14 +1889,6 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
     public ParcelFileDescriptor openWrite(String name, long offsetBytes, long lengthBytes) {
         assertCanWrite(false);
         try {
-            if (mPerfBoostInstall == null){
-                mPerfBoostInstall = new BoostFramework();
-            }
-            if (mPerfBoostInstall != null && !mIsPerfLockAcquired) {
-                mPerfBoostInstall.perfHint(BoostFramework.VENDOR_HINT_PACKAGE_INSTALL_BOOST,
-                        null, MAX_INSTALL_DURATION, -1);
-                mIsPerfLockAcquired = true;
-            }
             return doWriteInternal(name, offsetBytes, lengthBytes, null);
         } catch (IOException e) {
             throw ExceptionUtils.wrap(e);
@@ -2857,6 +2855,14 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
 
     private void verify() {
         try {
+            if (mPerfBoostInstall == null){
+                mPerfBoostInstall = new BoostFramework();
+            }
+            if (mPerfBoostInstall != null && !mIsPerfLockAcquired) {
+                mPerfBoostInstall.perfHint(BoostFramework.VENDOR_HINT_PACKAGE_INSTALL_BOOST,
+                        null, MAX_INSTALL_DURATION, -1);
+                mIsPerfLockAcquired = true;
+            }
             List<PackageInstallerSession> children = getChildSessions();
             if (isMultiPackage()) {
                 for (PackageInstallerSession child : children) {
@@ -2873,6 +2879,11 @@ public class PackageInstallerSession extends IPackageInstallerSession.Stub {
             final String errorMsg = PackageManager.installStatusToString(e.error, completeMsg);
             setSessionFailed(e.error, errorMsg);
             onSessionVerificationFailure(e.error, errorMsg);
+        } finally {
+            if (mIsPerfLockAcquired && mPerfBoostInstall != null) {
+                mPerfBoostInstall.perfLockRelease();
+                mIsPerfLockAcquired = false;
+            }
         }
     }
 

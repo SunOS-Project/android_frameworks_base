@@ -159,6 +159,7 @@ constructor(
                 listOf<ComponentInfoInternal>(),
                 FingerprintSensorProperties.TYPE_UNKNOWN,
                 false /* halControlsIllumination */,
+                false /* halHandlesDisplayTouches */,
                 true /* resetLockoutRequiresHardwareAuthToken */,
                 listOf<SensorLocationInternal>(SensorLocationInternal.DEFAULT)
             )
@@ -170,6 +171,7 @@ constructor(
                 listOf<ComponentInfoInternal>(),
                 FingerprintSensorProperties.TYPE_UNKNOWN,
                 false /* halControlsIllumination */,
+                false /* halHandlesDisplayTouches */,
                 true /* resetLockoutRequiresHardwareAuthToken */,
                 listOf<SensorLocationInternal>(SensorLocationInternal.DEFAULT)
             )

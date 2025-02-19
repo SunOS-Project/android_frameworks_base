@@ -222,6 +222,7 @@ public class Sensor {
                 componentInfo,
                 prop.sensorType,
                 prop.halControlsIllumination,
+                prop.halHandlesDisplayTouches,
                 resetLockoutRequiresHardwareAuthToken,
                 !workaroundLocations.isEmpty() ? workaroundLocations :
                         Arrays.stream(prop.sensorLocations).map(location ->

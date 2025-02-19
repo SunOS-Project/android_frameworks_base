@@ -376,6 +376,10 @@ public class AutomaticBrightnessController {
         mBrightnessMappingStrategyMap = brightnessMappingStrategyMap;
         mDisplayManagerFlags = displayManagerFlags;
 
+        AutomaticBrightnessControllerExt.getInstance().setUpdateBrightnessCallback(() -> {
+            mCallbacks.updateBrightness();
+        });
+
         // Use the given short-term model
         if (userNits != BrightnessMappingStrategy.INVALID_NITS) {
             setScreenBrightnessByUser(userLux, getBrightnessFromNits(userNits));

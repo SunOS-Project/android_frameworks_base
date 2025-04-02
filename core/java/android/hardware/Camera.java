@@ -312,7 +312,11 @@ public class Camera {
                 }
             }
         }
-        int numberOfCameras = _getNumberOfCameras();
+// QTI_BEGIN: 2025-04-03: Camera: Remove deprecated JNI method _getNumberOfCameras()
+
+        Context context = ActivityThread.currentApplication().getApplicationContext();
+        int numberOfCameras = getNumberOfCameras(context);
+// QTI_END: 2025-04-03: Camera: Remove deprecated JNI method _getNumberOfCameras()
         if (exposeAuxCamera == false && (numberOfCameras > 2)) {
             numberOfCameras = 2;
         }

@@ -2287,22 +2287,7 @@ public final class CameraManager {
 
         private String[] extractCameraIdListLocked(int deviceId, int devicePolicy) {
             List<String> cameraIds = new ArrayList<>();
-            boolean exposeAuxCamera = false;
-            String packageName = ActivityThread.currentOpPackageName();
-            String packageList = SystemProperties.get("vendor.camera.aux.packagelist");
-            if (packageList.length() > 0) {
-                TextUtils.StringSplitter splitter = new TextUtils.SimpleStringSplitter(',');
-                splitter.setString(packageList);
-                for (String str : splitter) {
-                    if (packageName.equals(str)) {
-                        exposeAuxCamera = true;
-                        break;
-                    }
-                }
-            }
-            int idCount = 0;
             for (int i = 0; i < mDeviceStatus.size(); i++) {
-                if(!exposeAuxCamera && (i == 2)) break;
                 int status = mDeviceStatus.valueAt(i);
                 DeviceCameraInfo info = mDeviceStatus.keyAt(i);
                 if (status == ICameraServiceListener.STATUS_NOT_PRESENT

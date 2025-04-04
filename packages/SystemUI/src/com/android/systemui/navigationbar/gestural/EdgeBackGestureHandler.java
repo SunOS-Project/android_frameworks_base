@@ -194,8 +194,13 @@ public class EdgeBackGestureHandler implements PluginListener<NavigationEdgeBack
                 }
 
                 @Override
-                public void onGestureCanceled(int gesture) {
-                    // Do nothing
+                public void onGestureCanceled(int gesture, MotionEvent event) {
+                    if (gesture != GESTURE_LEFT_RIGHT) {
+                        return;
+                    }
+                    mUiThreadContext.getExecutor().execute(() -> {
+                        cancelGesture(event);
+                    });
                 }
             };
 
